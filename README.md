@@ -27,31 +27,19 @@ A Swift package that extends ArgumentParser with dependency injection support fo
 Add the package to your `Package.swift`:
 
 ```swift
-dependencies: [
     .package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", branch: "main")
-]
 ```
 
 Then include it in your target:
 
 ```swift
-.target(
-    name: "YourTarget",
-    dependencies: [
-        .product(name: "NnArgumentParser", package: "NnArgumentParser")
-    ]
-)
+.product(name: "NnArgumentParser", package: "NnArgumentParser")
 ```
 
 For testing support, also add:
 
 ```swift
-.testTarget(
-    name: "YourTests",
-    dependencies: [
-        .product(name: "ArgumentParserTesting", package: "NnArgumentParser")
-    ]
-)
+.product(name: "NnArgumentParserTesting", package: "NnArgumentParser")
 ```
 
 ## Usage
@@ -78,7 +66,7 @@ struct MyCommand: NnRootCommand {
 
 ```swift
 import Testing
-import ArgumentParserTesting
+import NnArgumentParserTesting
 
 @Test func greeting() throws {
     let output = try MyCommand.testRun(

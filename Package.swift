@@ -14,8 +14,8 @@ let package = Package(
             targets: ["NnArgumentParser"]
         ),
         .library(
-            name: "ArgumentParserTesting",
-            targets: ["ArgumentParserTesting"]
+            name: "NnArgumentParserTesting",
+            targets: ["NnArgumentParserTesting"]
         )
     ],
     dependencies: [
@@ -29,7 +29,7 @@ let package = Package(
             ]
         ),
         .target(
-            name: "ArgumentParserTesting",
+            name: "NnArgumentParserTesting",
             dependencies: [
                 "NnArgumentParser"
             ]
