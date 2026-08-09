@@ -1,0 +1,9 @@
+{
+  "enabledPlugins": {
+    "NnShellKit@nelix-swift-tools": true,
+    "NnFileKit@nelix-swift-tools": true,
+    "NnArgumentParser@nelix-swift-tools": true,
+    "NnTesting@nelix-swift-tools": true,
+    "SwiftPickerKit@nelix-swift-tools": true
+  }
+}
