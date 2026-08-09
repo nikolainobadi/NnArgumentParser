@@ -34,5 +34,12 @@ let package = Package(
                 "NnArgumentParser"
             ]
         ),
+        .testTarget(
+            name: "NnArgumentParserTests",
+            dependencies: [
+                "NnArgumentParser",
+                "NnArgumentParserTesting"
+            ]
+        ),
     ]
 )
