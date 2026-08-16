@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
     "NnTesting@nelix-swift-tools": true,
-    "SwiftPickerKit@nelix-swift-tools": true
+    "SwiftPickerKit@nelix-swift-tools": true,
+    "NnArgumentParser@nn-swift-skills": true
   }
 }
