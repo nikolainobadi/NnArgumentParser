@@ -8,6 +8,11 @@ suppressing prompts in automated contexts.
 - `Sources/NnArgumentParserTesting` — `testRun`, for driving whole commands in tests.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
 
+Interactivity guidance appears in four places — the `InteractivityOptions` doc comment, `Skills/`,
+`README.md`, and `CHANGELOG.md`. They drifted once already: all four said to declare the option
+group on every prompting command, when one declaration on the root registers the mode for the whole
+chain. Change them together.
+
 ## The skill lives in this repo
 
 `Skills/NnArgumentParser` is the Claude skill documenting this package's API. It is published
@@ -52,6 +57,13 @@ The marketplace entry is **pinned to a release tag**, not to `main`. Two consequ
   When it expires the workflow fails loudly on tag push — a red X, not silence — so treat that
   failure as "rotate the token", not "the workflow is broken". Regenerate it, then re-run
   `gh secret set MARKETPLACE_TOKEN --repo <owner>/<package>` for every package repo using it.
+
+**`CHANGELOG.md` is updated before the tag, not after.** It follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/): entries accumulate under `Unreleased`
+during development, and cutting a release means renaming that heading to the version, dating it, and
+adding its comparison link at the bottom of the file. **Tags carry no `v` prefix** (`0.1.0`, not
+`v0.1.0`) — those links break if you add one. Nothing enforces any of this; no workflow checks the
+changelog, so a release cut without the rename silently ships an empty entry.
 
 **If that automation is ever removed or its token expires, the bump becomes manual.** Nothing errors
 and nothing warns when it is skipped — the marketplace simply keeps serving the previous release's

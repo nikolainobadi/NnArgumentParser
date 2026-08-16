@@ -31,7 +31,9 @@ documentation land in the same PR.
 
 ### Interactivity
 - **InteractionMode** — `enum` with `.interactive(assumeYes:)` / `.nonInteractive(assumeYes:)`. Read `InteractionMode.current` in your factory to decide between a real picker and a non-interactive one. Thread-local, like `contextFactory`.
-- **InteractivityOptions** — `@OptionGroup` adding `--non-interactive` and `--yes`. Its `validate()` resolves and registers the mode, and ArgumentParser calls that for the command *actually invoked* — which is why it works for subcommands.
+- **InteractivityOptions** — `@OptionGroup` adding `--non-interactive` and `--yes`. Its `validate()` resolves and registers the mode, and ArgumentParser calls that for *every command in the parsed chain* — which is why it works for subcommands.
+- **Declare it once on the root** — because the whole chain is validated, one `@OptionGroup` on the root registers the mode for every subcommand, in either flag position. Trade: only root `--help` lists the flags. Per-command declaration is for when each subcommand's own help must advertise them.
+- **No protocol can supply it** — ArgumentParser reflects over stored properties, and Swift protocols can't add one. Root-only declaration is the way to avoid repeating the property.
 - **Suppressed when any of** — `--non-interactive` passed, `NO_PROMPT` set to a non-empty value, or stdin isn't a terminal (pipe, redirect, cron). The last is what makes it safe by default.
 - **`--yes` ≠ `--non-interactive`** — orthogonal. `--yes` pre-approves confirmations without silencing other prompts.
 
@@ -47,6 +49,8 @@ documentation land in the same PR.
 - "Do I need to import ArgumentParser too?" -> Loads ApiReference.md
 - "How do I stop my CLI prompting when it runs in CI?" -> Loads ApiReference.md
 - "What's the difference between --yes and --non-interactive?" -> Loads ApiReference.md
+- "Can I avoid adding InteractivityOptions to every command?" -> Loads ApiReference.md
+- "Can a protocol give my commands the interactivity flags automatically?" -> Loads ApiReference.md
 - "How do I test a command end-to-end?" -> Loads TestingReference.md
 - "How do I assert a command's printed output in a test?" -> Loads TestingReference.md
 - "Why does my test ignore the --non-interactive flag I passed?" -> Loads TestingReference.md
