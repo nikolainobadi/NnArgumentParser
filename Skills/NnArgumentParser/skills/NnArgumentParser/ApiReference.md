@@ -163,17 +163,48 @@ public struct InteractivityOptions: ParsableArguments {
 
 ### Behavioral Notes
 
-- **`validate()` is the hook** — ArgumentParser calls it automatically while decoding the enclosing command's `@OptionGroup`, so it runs for whichever command was *actually invoked*. That matters for subcommands: running `tool sub` never executes the root command's `run()`, so resolving the mode there would silently do nothing.
-- **Adopting the type is about discoverability** — it puts the flags in `--help`, which matters most for automated callers. Suppression via `NO_PROMPT` or a non-terminal stdin applies whether or not a command adopts it.
+- **`validate()` is the hook** — ArgumentParser calls it automatically while decoding the enclosing command's `@OptionGroup`, and it does so for *every command in the parsed chain* as it descends (`CommandParser.descendingParse`), not only the one that ends up running. Validation is the hook rather than `run()` because running `tool sub` never executes the root command's `run()`, so resolving the mode there would silently do nothing.
+- **Adopting the type is about discoverability** — it puts the flags in *that command's* `--help`, which matters most for automated callers. Suppression via `NO_PROMPT` or a non-terminal stdin applies whether or not a command adopts it.
+- **There is no protocol that supplies the flags for you** — ArgumentParser finds arguments by reflecting over the concrete type's *stored properties*, and Swift protocol extensions can't add stored properties. Conforming to some `InteractivityAware` protocol could never make the `@OptionGroup` exist. Declare it on the root instead (below); that's the way to avoid repeating it.
+
+### Where to declare it
+
+| Style | Declaration | Registers mode for | Flags listed in |
+|-------|-------------|--------------------|-----------------|
+| **Root-only** (fewest declarations) | Once, on the root command | Every subcommand | `tool --help` only |
+| **Per-command** | On each command that prompts | That command | Each adopting command's `--help` |
+
+Root-only works because the chain is validated top-down, and the flags are accepted in **either position** — `tool --non-interactive add-user` and `tool add-user --non-interactive` both register the same mode. The trade is that only root help advertises them, and every subcommand accepts them whether or not it prompts.
 
 ### Usage Example
+
+Root-only — no subcommand declares anything:
+
+```swift
+@main
+struct MyTool: NnRootCommand {
+    static let configuration = CommandConfiguration(subcommands: [AddUser.self])
+
+    @OptionGroup var interactivity: InteractivityOptions
+
+    static var defaultFactory: any Dependencies { LiveDependencies() }
+}
+
+struct AddUser: ParsableCommand {
+    func run() throws {
+        // InteractionMode.current is already resolved by the time this runs.
+        let picker = MyTool.makePicker()
+    }
+}
+```
+
+Per-command — when `add-user --help` should list the flags itself:
 
 ```swift
 struct AddUser: ParsableCommand {
     @OptionGroup var interactivity: InteractivityOptions
 
     func run() throws {
-        // InteractionMode.current is already resolved by the time this runs.
         let picker = MyTool.makePicker()
     }
 }
@@ -193,5 +224,6 @@ struct AddUser: ParsableCommand {
 - **Never import ArgumentParser directly** — it arrives via `NnArgumentParser`.
 - **Don't set `contextFactory` in production** — production relies on `defaultFactory`; the setter exists for tests.
 - **Read `InteractionMode.current` in the factory, not in `run()`.** The point of the thread-local is that the flag value doesn't have to be threaded through initializers.
-- **Add `@OptionGroup var interactivity: InteractivityOptions` to every command that prompts** — that's what registers the mode and lists the flags in `--help`.
+- **Declare `@OptionGroup var interactivity: InteractivityOptions` once on the root command.** The whole chain is validated, so every subcommand gets the mode registered without repeating the property. Add it per-command only when each subcommand's own `--help` must list the flags.
+- **Don't try to factor it into a protocol.** ArgumentParser reflects over stored properties; a protocol can't add one. Root-only declaration is the way to stop repeating it.
 - **Don't treat `--yes` as implying `--non-interactive`.** They're orthogonal; `assumeYes` is carried by both cases for exactly that reason.

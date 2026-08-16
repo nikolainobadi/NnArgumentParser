@@ -1,6 +1,6 @@
 {
   "packagePath": ".",
-  "scannedAt": "2026-08-15T00:00:00Z",
+  "scannedAt": "2026-08-16T00:00:00Z",
   "git": {
     "sha": "6d02ef6b5ef6f3894118435d89f1263a0f66bd9e",
     "tag": "0.1.0"
@@ -10,7 +10,7 @@
     "Sources/NnArgumentParser/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
     "Sources/NnArgumentParser/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
     "Sources/NnArgumentParser/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
-    "Sources/NnArgumentParser/InteractivityOptions.swift": "00641106aaf758fe205f396684dde3620a4e1726bd6a4df2fbd5567244eec9e2",
+    "Sources/NnArgumentParser/InteractivityOptions.swift": "61956bc01deefc993429c9f306af7bdc92de8a29b740aebb699060ae6a2615f8",
     "Sources/NnArgumentParser/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
     "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6"
   },

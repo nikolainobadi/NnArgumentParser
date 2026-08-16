@@ -51,6 +51,20 @@ extension InteractivityOptionsTests {
             try makeSUT(args: ["plain", "--non-interactive"])
         }
     }
+
+    @Test
+    func `A subcommand that adopts nothing still inherits flags declared on the root`() throws {
+        defer { InteractionMode.reset() }
+
+        #expect(try makeRootAdoptingSUT(args: ["sub", "--non-interactive"]) == .nonInteractive(assumeYes: false))
+    }
+
+    @Test
+    func `Flags declared on the root are accepted ahead of the subcommand name`() throws {
+        defer { InteractionMode.reset() }
+
+        #expect(try makeRootAdoptingSUT(args: ["--non-interactive", "sub"]) == .nonInteractive(assumeYes: false))
+    }
 }
 
 
@@ -78,5 +92,26 @@ private extension InteractivityOptionsTests {
 
     struct PlainSubcommand: ParsableCommand {
         static let configuration = CommandConfiguration(commandName: "plain")
+    }
+
+    /// Registering from the root covers the whole chain, so subcommands declare nothing.
+    func makeRootAdoptingSUT(args: [String]) throws -> InteractionMode {
+        InteractionMode.reset()
+        _ = try RootAdoptingRoot.parseAsRoot(args)
+
+        return InteractionMode.current
+    }
+
+    struct RootAdoptingRoot: ParsableCommand {
+        static let configuration = CommandConfiguration(
+            commandName: "test",
+            subcommands: [BareSubcommand.self]
+        )
+
+        @OptionGroup var interactivity: InteractivityOptions
+    }
+
+    struct BareSubcommand: ParsableCommand {
+        static let configuration = CommandConfiguration(commandName: "sub")
     }
 }
