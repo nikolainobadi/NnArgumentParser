@@ -11,6 +11,7 @@ A Swift package that extends ArgumentParser with dependency injection support fo
 ## Features
 
 - **Dependency Injection Protocol** — `NnRootCommand` protocol for commands with injectable factories
+- **Non-Interactive Mode** — `InteractivityOptions` flags plus automatic detection, so prompting commands work when driven by scripts
 - **Thread-Safe Testing** — Thread-local storage enables parallel test execution
 - **stdout Capture** — `testRun` method captures printed output for test assertions
 - **ArgumentParser Re-export** — Import `NnArgumentParser` to get full ArgumentParser access
@@ -62,6 +63,53 @@ struct MyCommand: NnRootCommand {
 }
 ```
 
+### Support Non-Interactive Callers
+
+A command that prompts for values the caller didn't supply will hang when it's driven by a script
+or an automated tool, where nobody is there to answer. Add `InteractivityOptions` to any command
+that prompts, and build the prompting dependency from `InteractionMode.current`:
+
+```swift
+struct AddUser: ParsableCommand {
+    @OptionGroup var interactivity: InteractivityOptions
+
+    func run() throws {
+        let prompter = MyCommand.contextFactory.makePrompter()
+        // InteractionMode.current is already resolved by the time this runs
+    }
+}
+
+struct MyFactory {
+    func makePrompter() -> Prompter {
+        switch InteractionMode.current {
+        case .interactive:
+            return TerminalPrompter()
+        case .nonInteractive(let assumeYes):
+            return NonInteractivePrompter(assumeYes: assumeYes)
+        }
+    }
+}
+```
+
+Nothing between the command and the prompter needs to know which mode is active, so a command's
+subcommands and services stay unchanged.
+
+Prompting is disabled when **any** of the following is true:
+
+| Trigger | Source |
+|---------|--------|
+| `--non-interactive` | A command that adopts `InteractivityOptions` |
+| `NO_PROMPT` set to any non-empty value | Environment |
+| Standard input is not a terminal | Pipes, redirects, scheduled jobs |
+
+The last trigger applies to every command, whether or not it adopts the flags. Following the
+`NO_COLOR` convention, `NO_PROMPT` is checked for presence rather than value — `NO_PROMPT=0`
+disables prompting just as `NO_PROMPT=1` does.
+
+`--yes` is a separate axis: it marks confirmation prompts as approved without disabling prompting.
+The two combine freely — `--yes` alone at a terminal skips confirmations while other prompts still
+work, and `--non-interactive --yes` disables prompting entirely with confirmations pre-approved.
+
 ### Test Commands with Injected Dependencies
 
 ```swift
@@ -75,6 +123,19 @@ import NnArgumentParserTesting
     )
     #expect(output == "Hello, World!")
 }
+```
+
+`testRun` applies `.nonInteractive` by default, so a test that reaches a prompt fails instead of
+blocking the suite on input that never arrives. The mode is applied after parsing, so it takes
+precedence over any interactivity flags in `args`. Pass `interactionMode:` to change it, or `nil`
+to let the arguments and environment decide:
+
+```swift
+// Exercise the command's own flags
+try MyCommand.testRun(args: ["--non-interactive"], interactionMode: nil)
+
+// Exercise the interactive path
+try MyCommand.testRun(args: ["World"], interactionMode: .interactive)
 ```
 
 ## Dependencies

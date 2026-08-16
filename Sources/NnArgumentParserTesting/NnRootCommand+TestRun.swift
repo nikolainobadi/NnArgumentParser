@@ -21,6 +21,10 @@ extension NnRootCommand {
     ///   - contextFactory: An optional factory to inject for this test run.
     ///     If `nil`, uses the command's ``defaultFactory``.
     ///   - args: The command-line arguments to pass. Defaults to an empty array.
+    ///   - interactionMode: The mode to apply for the duration of the run, applied after parsing
+    ///     so it takes precedence over any parsed interactivity flags. Defaults to
+    ///     ``InteractionMode/nonInteractive(assumeYes:)``. Pass `nil` to leave the decision to the
+    ///     parsed arguments and the environment, which is what a test exercising the flags wants.
     /// - Returns: The captured standard output as a trimmed string.
     /// - Throws: Any error thrown by the command's `run()` method.
     ///
@@ -30,16 +34,26 @@ extension NnRootCommand {
     /// let output = try MyCommand.testRun(args: ["subcommand", "--flag"])
     /// XCTAssertEqual(output, "Expected output")
     /// ```
+    ///
+    /// - Note: The non-interactive default exists so a test that reaches a prompt fails instead of
+    ///   blocking the suite on input that will never arrive. It only helps to the extent that the
+    ///   command's factory consults ``InteractionMode/current`` when building its dependencies.
     @discardableResult
-    public static func testRun(contextFactory: Factory? = nil, args: [String]? = []) throws -> String {
+    public static func testRun(
+        contextFactory: Factory? = nil,
+        args: [String]? = [],
+        interactionMode: InteractionMode? = .nonInteractive(assumeYes: false)
+    ) throws -> String {
+        defer { InteractionMode.reset() }
+
         if let contextFactory { self.contextFactory = contextFactory }
-        return try captureOutput(args: args)
+        return try captureOutput(args: args, interactionMode: interactionMode)
     }
 }
 
 // MARK: - Private Methods
 private extension NnRootCommand {
-    static func captureOutput(args: [String]?) throws -> String {
+    static func captureOutput(args: [String]?, interactionMode: InteractionMode?) throws -> String {
         stdoutLock.lock()
         defer { stdoutLock.unlock() }
 
@@ -52,6 +66,11 @@ private extension NnRootCommand {
 
         do {
             var command = try Self.parseAsRoot(args)
+
+            if let interactionMode {
+                InteractionMode.register(interactionMode)
+            }
+
             try command.run()
         } catch {
             fflush(stdout)
