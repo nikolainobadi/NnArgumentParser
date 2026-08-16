@@ -136,13 +136,22 @@ depending on all of it.
 ## Supporting Non-Interactive Callers
 
 A command that prompts for values the caller didn't supply will hang when driven by a script or a
-scheduled job, where nobody is there to answer. Add `InteractivityOptions` to any command that
-prompts, and build the prompting dependency from `InteractionMode.current`:
+scheduled job, where nobody is there to answer. Declare `InteractivityOptions` on your root command,
+and build the prompting dependency from `InteractionMode.current`:
 
 ```swift
-struct AddUser: ParsableCommand {
+@main
+struct MyTool: NnRootCommand {
+    static let configuration = CommandConfiguration(subcommands: [AddUser.self])
+
     @OptionGroup var interactivity: InteractivityOptions
 
+    static var defaultFactory: any Dependencies {
+        return LiveDependencies()
+    }
+}
+
+struct AddUser: ParsableCommand {
     func run() throws {
         let prompter = MyTool.makePrompter()
         // InteractionMode.current is already resolved by the time this runs
@@ -160,6 +169,11 @@ struct LiveDependencies: Dependencies {
     }
 }
 ```
+
+`AddUser` declares nothing. `InteractivityOptions` resolves the mode in `validate()`, and
+ArgumentParser calls that for *every* command in the parsed chain — not only the one that runs — so
+one declaration on the root covers every subcommand. The flags work in either position:
+`tool --non-interactive add-user` and `tool add-user --non-interactive` are equivalent.
 
 Nothing between the command and the prompter needs to know which mode is active, so subcommands and
 services stay unchanged.
@@ -180,9 +194,9 @@ value, so `NO_PROMPT=0` disables prompting just as `NO_PROMPT=1` does.
 The two combine freely — `--yes` alone at a terminal skips confirmations while other prompts still
 work, and `--non-interactive --yes` disables prompting entirely with confirmations pre-approved.
 
-> `InteractivityOptions` resolves the mode in `validate()`, which ArgumentParser calls for the
-> command *actually invoked*. Add it to each command that prompts, not only to the root — running
-> `tool sub` never executes the root's `run()`.
+> Declaring `InteractivityOptions` per-command is still worth it when that command's own `--help`
+> should list the flags — root-only declaration puts them in `tool --help` alone. The trade-off is
+> that a root declaration also makes every subcommand accept the flags, whether or not it prompts.
 
 ## Testing
 

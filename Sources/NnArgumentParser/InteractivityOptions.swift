@@ -10,27 +10,11 @@ import ArgumentParser
 /// Flags that let a caller disable prompting, for commands that would otherwise ask for
 /// values the caller didn't supply.
 ///
-/// Add this to any command that prompts, and the resolved ``InteractionMode`` becomes available
-/// to that command's dependencies via ``InteractionMode/current`` — no need to pass a flag value
+/// Declare this on your root command, and the resolved ``InteractionMode`` becomes available to
+/// every command's dependencies via ``InteractionMode/current`` — no need to pass a flag value
 /// down through initializers.
 ///
 /// ## Example
-///
-/// ```swift
-/// struct AddUser: ParsableCommand {
-///     @OptionGroup var interactivity: InteractivityOptions
-///
-///     func run() throws {
-///         // InteractionMode.current is already resolved by the time this runs
-///     }
-/// }
-/// ```
-///
-/// ## Declaring it once on the root
-///
-/// ArgumentParser validates *every* command in the parsed chain, not only the one that runs, so a
-/// single declaration on the root registers the mode for every subcommand — none of them need to
-/// declare anything:
 ///
 /// ```swift
 /// @main
@@ -39,14 +23,30 @@ import ArgumentParser
 ///
 ///     @OptionGroup var interactivity: InteractivityOptions
 /// }
+///
+/// struct AddUser: ParsableCommand {
+///     func run() throws {
+///         // InteractionMode.current is already resolved by the time this runs
+///     }
+/// }
 /// ```
 ///
-/// The flags are accepted in either position — `tool --non-interactive add-user` and
+/// ArgumentParser validates *every* command in the parsed chain, not only the one that runs, so
+/// that single declaration registers the mode for every subcommand — `AddUser` declares nothing.
+/// The flags are accepted in either position: `tool --non-interactive add-user` and
 /// `tool add-user --non-interactive` both register the same mode.
 ///
-/// The trade is discoverability: only `tool --help` lists the flags, and every subcommand accepts
-/// them whether or not it prompts. Declare it per-command instead when each subcommand's own
-/// `--help` should advertise them.
+/// ## Declaring it per-command
+///
+/// The trade with a root-only declaration is discoverability: only `tool --help` lists the flags,
+/// and every subcommand accepts them whether or not it prompts. Declare the group on an individual
+/// command instead when that command's own `--help` should advertise them:
+///
+/// ```swift
+/// struct AddUser: ParsableCommand {
+///     @OptionGroup var interactivity: InteractivityOptions
+/// }
+/// ```
 ///
 /// - Note: Attaching this to a command is what makes the flags discoverable in that command's
 ///   `--help`, which matters most for automated callers. Prompt suppression via `NO_PROMPT` or a
