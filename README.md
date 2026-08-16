@@ -4,17 +4,30 @@
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blueviolet.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)
 
-## Overview
+A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift-argument-parser)
+that makes command-line tools testable.
 
-A Swift package that extends ArgumentParser with dependency injection support for testable CLI commands. Provides thread-local factory storage for injecting dependencies during testing without global mutable state.
+## Why
+
+ArgumentParser constructs your command values for you. That's convenient until a command needs a
+dependency — a network client, a file system, a prompt — because there's no initializer to inject
+it through. The usual workaround is a global `var` that tests reassign, which breaks the moment
+tests run in parallel.
+
+NnArgumentParser adds one seam: a **factory**, resolved through thread-local storage. Production
+reads the default; a test sets its own for the current thread only. Nothing is shared between
+threads, so parallel tests don't interfere.
+
+It also handles the other thing CLIs get wrong — prompting for input when nobody is there to
+answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 
 ## Features
 
-- **Dependency Injection Protocol** — `NnRootCommand` protocol for commands with injectable factories
-- **Non-Interactive Mode** — `InteractivityOptions` flags plus automatic detection, so prompting commands work when driven by scripts
-- **Thread-Safe Testing** — Thread-local storage enables parallel test execution
-- **stdout Capture** — `testRun` method captures printed output for test assertions
-- **ArgumentParser Re-export** — Import `NnArgumentParser` to get full ArgumentParser access
+- **Dependency injection** — `NnRootCommand` gives commands an injectable factory with no global state
+- **Parallel-safe** — thread-local storage, so concurrent tests can't clobber each other
+- **End-to-end testing** — `testRun` parses arguments, runs the command, and returns its stdout
+- **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
+- **ArgumentParser re-export** — one import gets you both
 
 ## Requirements
 
@@ -23,64 +36,121 @@ A Swift package that extends ArgumentParser with dependency injection support fo
 
 ## Installation
 
-### Swift Package Manager
-
 Add the package to your `Package.swift`:
 
 ```swift
-    .package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", branch: "main")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.1.0")
 ```
 
-Then include it in your target:
+Then add the product to your target:
 
 ```swift
 .product(name: "NnArgumentParser", package: "NnArgumentParser")
 ```
 
-For testing support, also add:
+And to your **test** target:
 
 ```swift
 .product(name: "NnArgumentParserTesting", package: "NnArgumentParser")
 ```
 
-## Usage
+> `import NnArgumentParser` re-exports all of ArgumentParser — `ParsableCommand`,
+> `CommandConfiguration`, `@Option`, `@Flag`, `@Argument`. Don't import ArgumentParser separately.
 
-### Define a Root Command with Dependency Injection
+## Quick Start
+
+Define the dependencies your tool needs. This type is entirely yours — NnArgumentParser places no
+constraints on it:
+
+```swift
+protocol Dependencies {
+    func makeGreeter() -> any Greeter
+}
+
+struct LiveDependencies: Dependencies {
+    func makeGreeter() -> any Greeter { DefaultGreeter() }
+}
+```
+
+Conform your **root** command to `NnRootCommand` and point it at that factory:
 
 ```swift
 import NnArgumentParser
 
-struct MyCommand: NnRootCommand {
-    typealias Factory = MyFactory
-    static var defaultFactory: Factory { MyFactory() }
+@main
+struct MyTool: NnRootCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "An example command-line tool.",
+        subcommands: [Greet.self]
+    )
 
-    @Argument var name: String
-
-    mutating func run() throws {
-        let greeter = Self.contextFactory.makeGreeter()
-        print(greeter.greet(name))
+    static var defaultFactory: any Dependencies {
+        return LiveDependencies()
     }
 }
 ```
 
-### Support Non-Interactive Callers
+Subcommands reach dependencies through the root type. Add a static accessor for each one:
 
-A command that prompts for values the caller didn't supply will hang when it's driven by a script
-or an automated tool, where nobody is there to answer. Add `InteractivityOptions` to any command
-that prompts, and build the prompting dependency from `InteractionMode.current`:
+```swift
+extension MyTool {
+    static func makeGreeter() -> any Greeter {
+        return contextFactory.makeGreeter()
+    }
+}
+
+struct Greet: ParsableCommand {
+    @Argument var name: String
+
+    func run() throws {
+        print(MyTool.makeGreeter().greeting(for: name))
+    }
+}
+```
+
+ArgumentParser builds `Greet` itself, so there's no initializer to inject through — the static
+accessor on the root type is how the dependency gets there.
+
+## Core Concepts
+
+### `defaultFactory` vs `contextFactory`
+
+| | What it is | Who uses it |
+|---|---|---|
+| `defaultFactory` | You implement it. The real dependencies. | Production |
+| `contextFactory` | Provided for you. Returns the thread-local factory if one was set, otherwise `defaultFactory`. | Everything reads this |
+
+Always read `contextFactory`. Never set it in production code — `testRun` sets it, and that's the
+only thing that should.
+
+### Conform only the root command
+
+Subcommands stay plain `ParsableCommand`s. One conformance, at the `@main` type, is all you need.
+
+### Keep the factory an infrastructure seam
+
+Vend primitives — a shell, a file system, a picker — and let each command assemble its own feature
+from them. A factory with a method per feature becomes a service locator, and every command ends up
+depending on all of it.
+
+## Supporting Non-Interactive Callers
+
+A command that prompts for values the caller didn't supply will hang when driven by a script or a
+scheduled job, where nobody is there to answer. Add `InteractivityOptions` to any command that
+prompts, and build the prompting dependency from `InteractionMode.current`:
 
 ```swift
 struct AddUser: ParsableCommand {
     @OptionGroup var interactivity: InteractivityOptions
 
     func run() throws {
-        let prompter = MyCommand.contextFactory.makePrompter()
+        let prompter = MyTool.makePrompter()
         // InteractionMode.current is already resolved by the time this runs
     }
 }
 
-struct MyFactory {
-    func makePrompter() -> Prompter {
+struct LiveDependencies: Dependencies {
+    func makePrompter() -> any Prompter {
         switch InteractionMode.current {
         case .interactive:
             return TerminalPrompter()
@@ -91,8 +161,8 @@ struct MyFactory {
 }
 ```
 
-Nothing between the command and the prompter needs to know which mode is active, so a command's
-subcommands and services stay unchanged.
+Nothing between the command and the prompter needs to know which mode is active, so subcommands and
+services stay unchanged.
 
 Prompting is disabled when **any** of the following is true:
 
@@ -102,41 +172,83 @@ Prompting is disabled when **any** of the following is true:
 | `NO_PROMPT` set to any non-empty value | Environment |
 | Standard input is not a terminal | Pipes, redirects, scheduled jobs |
 
-The last trigger applies to every command, whether or not it adopts the flags. Following the
-`NO_COLOR` convention, `NO_PROMPT` is checked for presence rather than value — `NO_PROMPT=0`
-disables prompting just as `NO_PROMPT=1` does.
+The last applies to every command, whether or not it adopts the flags — which is what makes it safe
+by default. Following the `NO_COLOR` convention, `NO_PROMPT` is checked for presence rather than
+value, so `NO_PROMPT=0` disables prompting just as `NO_PROMPT=1` does.
 
 `--yes` is a separate axis: it marks confirmation prompts as approved without disabling prompting.
 The two combine freely — `--yes` alone at a terminal skips confirmations while other prompts still
 work, and `--non-interactive --yes` disables prompting entirely with confirmations pre-approved.
 
-### Test Commands with Injected Dependencies
+> `InteractivityOptions` resolves the mode in `validate()`, which ArgumentParser calls for the
+> command *actually invoked*. Add it to each command that prompts, not only to the root — running
+> `tool sub` never executes the root's `run()`.
+
+## Testing
+
+`testRun` parses arguments against the root command, runs the resolved command, and returns its
+trimmed stdout:
 
 ```swift
 import Testing
 import NnArgumentParserTesting
 
-@Test func greeting() throws {
-    let output = try MyCommand.testRun(
-        contextFactory: MockFactory(),
-        args: ["World"]
+@Test func greetsTheProvidedName() throws {
+    let output = try MyTool.testRun(
+        contextFactory: MockDependencies(),
+        args: ["greet", "Ada"]
     )
-    #expect(output == "Hello, World!")
+
+    #expect(output == "Hello, Ada!")
+}
+
+struct MockDependencies: Dependencies {
+    func makeGreeter() -> any Greeter { StubGreeter() }
 }
 ```
 
-`testRun` applies `.nonInteractive` by default, so a test that reaches a prompt fails instead of
-blocking the suite on input that never arrives. The mode is applied after parsing, so it takes
-precedence over any interactivity flags in `args`. Pass `interactionMode:` to change it, or `nil`
-to let the arguments and environment decide:
+Errors thrown by `run()` are rethrown, so `#expect(throws:)` works as usual.
+
+### Tests are non-interactive by default
+
+`testRun` applies `.nonInteractive(assumeYes: false)` unless told otherwise, so a test that reaches
+a prompt fails instead of blocking the suite on input that never arrives. This works only to the
+extent that your factory consults `InteractionMode.current`.
+
+The mode is applied **after** parsing, so it overrides interactivity flags in `args`. To test the
+flags themselves, pass `nil`:
 
 ```swift
-// Exercise the command's own flags
-try MyCommand.testRun(args: ["--non-interactive"], interactionMode: nil)
+// Let the parsed --non-interactive flag decide
+try MyTool.testRun(args: ["add-user", "--non-interactive"], interactionMode: nil)
 
-// Exercise the interactive path
-try MyCommand.testRun(args: ["World"], interactionMode: .interactive)
+// Exercise the interactive path explicitly
+try MyTool.testRun(args: ["add-user"], interactionMode: .interactive(assumeYes: false))
 ```
+
+`testRun` resets the mode when it finishes, so nothing leaks into the next test on that thread.
+
+### Mocking infrastructure
+
+NnArgumentParser only requires that your factory can be swapped for a test double; it's agnostic
+about what the factory vends. Test doubles for common infrastructure ship with their own packages —
+[NnFileKit](https://github.com/nikolainobadi/NnFileKit) for file systems,
+[NnShellKit](https://github.com/nikolainobadi/NnShellKit) for shell execution, and
+[SwiftPickerKit](https://github.com/nikolainobadi/SwiftPickerKit) for interactive pickers. Have your
+factory's test double vend those, then inject it through `testRun`.
+
+## API Reference for Claude Code
+
+`Skills/NnArgumentParser` is a [Claude Code](https://claude.com/claude-code) skill documenting this
+package's full API. It lives in this repo so the docs change in the same PR as the API they
+describe. To use it:
+
+```
+/plugin marketplace add nikolainobadi/nn-swift-skills
+/plugin install NnArgumentParser@nn-swift-skills
+```
+
+Claude then loads the reference automatically when you're working with this package.
 
 ## Dependencies
 
@@ -144,4 +256,4 @@ try MyCommand.testRun(args: ["World"], interactionMode: .interactive)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
