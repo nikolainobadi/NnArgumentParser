@@ -1,6 +1,6 @@
 ---
 name: NnArgumentParser
-description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, or testing commands end-to-end with testRun and an injected mock factory.
+description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, or testing commands end-to-end with testRun and an injected mock factory.
 user-invocable: true
 ---
 
@@ -37,6 +37,15 @@ documentation land in the same PR.
 - **Suppressed when any of** — `--non-interactive` passed, `NO_PROMPT` set to a non-empty value, or stdin isn't a terminal (pipe, redirect, cron). The last is what makes it safe by default.
 - **`--yes` ≠ `--non-interactive`** — orthogonal. `--yes` pre-approves confirmations without silencing other prompts.
 
+### Arguments
+- **CaseInsensitiveArgument** — marker protocol for a `String`-raw `CaseIterable` enum. Conform and `--scope STAGED` parses like `--scope staged`. Replaces the hand-written `switch argument.lowercased()`.
+- **Only parsing loosens** — `--help`, shell completion, `init?(rawValue:)` and synthesized `Codable` still use the exact `rawValue`. Accepting `--format JSON` does not make a config file accept `"JSON"`.
+- **Exact match wins first** — so an enum with raw values differing only by case (`"run"`/`"RUN"`) keeps both reachable.
+- **Requires `CaseIterable`** — adding that retroactively to another package's type means hand-writing `allCases`, which goes stale silently. Adopt only where it already exists.
+- **KeyValueArgument** — a `<key>=<value>` pair. Splits on the **first** `=`, so values may contain `=` (`core=swift test --filter=Foo`). Rejects a missing separator or an empty half. Whitespace is kept.
+- **`[KeyValueArgument].asDictionary()`** — folds pairs into `[String: String]`; a repeated key resolves to the last value.
+- **Put the shape in your help string** — `KeyValueArgument` can't describe itself in `--help` or in its parse error, so write `help: "... as <target>=<command>."`
+
 ### Testing
 - **testRun(contextFactory:args:interactionMode:)** — from `NnArgumentParserTesting`: injects an optional factory, parses `args` against the root command, runs it, returns captured stdout (trimmed). `@discardableResult`.
 - **Non-interactive by default** — `interactionMode` defaults to `.nonInteractive(assumeYes: false)` and is applied *after* parsing, so a test hitting a prompt fails rather than hanging. Pass `nil` when the test is about the flags themselves.
@@ -51,6 +60,10 @@ documentation land in the same PR.
 - "What's the difference between --yes and --non-interactive?" -> Loads ApiReference.md
 - "Can I avoid adding InteractivityOptions to every command?" -> Loads ApiReference.md
 - "Can a protocol give my commands the interactivity flags automatically?" -> Loads ApiReference.md
+- "How do I make my CLI accept --scope STAGED as well as staged?" -> Loads ApiReference.md
+- "Why does my enum option reject uppercase values?" -> Loads ApiReference.md
+- "How do I parse a --define key=value option?" -> Loads ApiReference.md
+- "How do I collect repeated key=value flags into a dictionary?" -> Loads ApiReference.md
 - "How do I test a command end-to-end?" -> Loads TestingReference.md
 - "How do I assert a command's printed output in a test?" -> Loads TestingReference.md
 - "Why does my test ignore the --non-interactive flag I passed?" -> Loads TestingReference.md

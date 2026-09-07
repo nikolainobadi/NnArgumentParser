@@ -12,7 +12,9 @@
     "Sources/NnArgumentParser/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
     "Sources/NnArgumentParser/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
     "Sources/NnArgumentParser/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
-    "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6"
+    "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6",
+    "Sources/NnArgumentParser/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
+    "Sources/NnArgumentParser/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a"
   },
   "types": [
     {
@@ -20,21 +22,28 @@
       "file": "Sources/NnArgumentParser/NnRootCommand.swift",
       "doc": "ApiReference.md",
       "anchor": "NnRootCommand",
-      "conforms": ["ParsableCommand"]
+      "conforms": [
+        "ParsableCommand"
+      ]
     },
     {
       "name": "InteractionMode",
       "file": "Sources/NnArgumentParser/InteractionMode.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractionMode",
-      "conforms": ["Sendable", "Equatable"]
+      "conforms": [
+        "Sendable",
+        "Equatable"
+      ]
     },
     {
       "name": "InteractivityOptions",
       "file": "Sources/NnArgumentParser/InteractivityOptions.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractivityOptions",
-      "conforms": ["ParsableArguments"]
+      "conforms": [
+        "ParsableArguments"
+      ]
     },
     {
       "name": "testRun",
@@ -42,6 +51,29 @@
       "doc": "TestingReference.md",
       "anchor": "testRun",
       "conforms": []
+    },
+    {
+      "name": "CaseInsensitiveArgument",
+      "file": "Sources/NnArgumentParser/CaseInsensitiveArgument.swift",
+      "doc": "ApiReference.md",
+      "anchor": "CaseInsensitiveArgument",
+      "conforms": [
+        "ExpressibleByArgument",
+        "CaseIterable",
+        "RawRepresentable"
+      ]
+    },
+    {
+      "name": "KeyValueArgument",
+      "file": "Sources/NnArgumentParser/KeyValueArgument.swift",
+      "doc": "ApiReference.md",
+      "anchor": "KeyValueArgument",
+      "conforms": [
+        "ExpressibleByArgument",
+        "Equatable",
+        "Hashable",
+        "Sendable"
+      ]
     }
   ]
 }
