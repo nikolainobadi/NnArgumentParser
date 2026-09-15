@@ -1,0 +1,33 @@
+{
+  "ai" : {
+    "tasks" : [
+      {
+        "id" : "readme",
+        "review" : false,
+        "skill" : "readme-update"
+      },
+      {
+        "id" : "agentDocs",
+        "review" : false,
+        "skill" : "agent-docs-update"
+      },
+      {
+        "id" : "referenceSkill",
+        "review" : false,
+        "skill" : "reference-skill-update"
+      }
+    ]
+  },
+  "releaseBranch" : "main",
+  "targets" : [
+    {
+      "buildSettings" : {
+        "buildCommands" : [
+          "swift build"
+        ]
+      },
+      "name" : "NnArgumentParser",
+      "projectType" : "libraryPackage"
+    }
+  ]
+}
