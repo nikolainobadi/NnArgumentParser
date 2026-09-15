@@ -213,6 +213,111 @@ struct AddUser: ParsableCommand {
 
 ---
 
+<!-- type:CaseInsensitiveArgument -->
+## Protocol: CaseInsensitiveArgument
+
+A marker protocol that makes an `ExpressibleByArgument` enum parse regardless of letter case.
+
+```swift
+public protocol CaseInsensitiveArgument: ExpressibleByArgument, CaseIterable, RawRepresentable
+where RawValue == String { }
+
+public extension CaseInsensitiveArgument {
+    init?(argument: String)
+}
+```
+
+Conform and write nothing else:
+
+```swift
+enum DiscardScope: String, CaseIterable, CaseInsensitiveArgument {
+    case staged, unstaged, both
+}
+
+// --scope staged, --scope Staged and --scope STAGED all parse to .staged
+```
+
+For an enum owned by another module, conform retroactively:
+
+```swift
+extension OptionalComponent: @retroactive CaseInsensitiveArgument { }
+```
+
+### Behavioral Notes
+
+- **Only parsing loosens.** The protocol replaces `init?(argument:)` and nothing else. `allValueStrings` (what `--help` lists), `defaultCompletionKind` (what shell completion offers), `init?(rawValue:)` and any synthesized `Codable` conformance all still use the exact `rawValue`. A tool that accepts `--format JSON` will still reject `"JSON"` decoded from a config file, and its help will advertise only `json`. That divergence is the trade — decide it deliberately, because once a caller's script depends on the loose spelling you cannot withdraw it without breaking them.
+- **An exact match always wins.** The initializer tries `Self(rawValue:)` first, then falls back to a case-insensitive scan. Without that first pass, an enum whose raw values differ only by case (`"run"` and `"RUN"`) would resolve both spellings to whichever case `allCases` yields first, leaving the other unreachable with no diagnostic.
+- **`CaseIterable` is required, and that constrains where this applies.** The case-insensitive scan needs `allCases`. Adding `CaseIterable` retroactively to a type from another package means hand-writing `allCases`, which silently goes stale when that package adds a case — the exact failure this protocol exists to prevent. Only adopt on enums that already have it, or that you own.
+- **It replaces a hand-written switch, and the switch is the thing worth deleting.** A `switch argument.lowercased()` has no connection to the enum: add a case and the option silently stops accepting it while `--help` still advertises it.
+
+### Usage Example
+
+```swift
+import NnArgumentParser
+
+enum DiscardScope: String, CaseIterable, CaseInsensitiveArgument {
+    case staged, unstaged, both
+}
+
+struct Discard: ParsableCommand {
+    @Option(name: .shortAndLong, help: "Which changes to discard.")
+    var scope: DiscardScope = .both
+}
+```
+<!-- /type:CaseInsensitiveArgument -->
+
+---
+
+<!-- type:KeyValueArgument -->
+## Struct: KeyValueArgument
+
+A `<key>=<value>` pair, so one repeatable option can carry a setting per key.
+
+```swift
+public struct KeyValueArgument: Equatable, Hashable, Sendable, ExpressibleByArgument {
+    public let key: String
+    public let value: String
+    public init?(argument: String)
+}
+
+public extension Array where Element == KeyValueArgument {
+    func asDictionary() -> [String: String]
+}
+```
+
+| Input | Result |
+|-------|--------|
+| `core=library` | `("core", "library")` |
+| `core=swift test --filter=Foo` | `("core", "swift test --filter=Foo")` — split on the **first** `=` only |
+| `core` | `nil` — no separator |
+| `core=` | `nil` — empty value |
+| `=library` | `nil` — empty key |
+
+### Behavioral Notes
+
+- **Splits on the first `=` only,** so a value may contain further `=` characters. This is what lets a value be a shell command: `--test-command "core=swift test --filter=Foo"` keeps the whole command.
+- **Surrounding whitespace is kept.** Values are typically shell commands, where trimming could change what runs. `"Kit = swift build"` yields key `"Kit "`, which will not match a target named `"Kit"`.
+- **A repeated key resolves to the last value** in `asDictionary()`, matching how a caller expects a repeated flag to behave.
+- **Advertise the shape in your help text.** ArgumentParser renders the option as a bare `--build-command <build-command>`, and a failable initializer cannot explain what it rejected — `--build-command core` fails with only "The value 'core' is invalid for '--build-command <build-command>'". Write `help: "A target's build command, as <target>=<command>."`
+
+### Usage Example
+
+```swift
+import NnArgumentParser
+
+struct BuildCommandOptions: ParsableArguments {
+    @Option(name: .customLong("build-command"), parsing: .singleValue, help: "A target's build command, as <target>=<command>.")
+    var build: [KeyValueArgument] = []
+
+    var buildCommands: [String: String] {
+        return build.asDictionary()
+    }
+}
+```
+<!-- /type:KeyValueArgument -->
+
+---
+
 ## Re-exported ArgumentParser
 
 `NnArgumentParser` declares `@_exported import ArgumentParser`, so a single `import NnArgumentParser` brings in the full ArgumentParser surface — `ParsableCommand`, `CommandConfiguration`, `@Option`, `@Flag`, `@Argument`, `ExpressibleByArgument`, etc. Do **not** add a separate `import ArgumentParser`.
@@ -226,4 +331,6 @@ struct AddUser: ParsableCommand {
 - **Read `InteractionMode.current` in the factory, not in `run()`.** The point of the thread-local is that the flag value doesn't have to be threaded through initializers.
 - **Declare `@OptionGroup var interactivity: InteractivityOptions` once on the root command.** The whole chain is validated, so every subcommand gets the mode registered without repeating the property. Add it per-command only when each subcommand's own `--help` must list the flags.
 - **Don't try to factor it into a protocol.** ArgumentParser reflects over stored properties; a protocol can't add one. Root-only declaration is the way to stop repeating it.
+- **Reach for `CaseInsensitiveArgument` only on enums that are already `CaseIterable`.** Retrofitting `CaseIterable` onto someone else's type means hand-maintaining `allCases`, which reintroduces the staleness the protocol removes.
+- **Put the `<key>=<value>` shape in the option's help string.** `KeyValueArgument` cannot describe itself in help or in its parse failure; the help text is the only place a caller learns the shape.
 - **Don't treat `--yes` as implying `--non-interactive`.** They're orthogonal; `assumeYes` is carried by both cases for exactly that reason.
