@@ -8,7 +8,7 @@ user-invocable: true
 
 A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift-argument-parser) that adds a dependency-injection seam for command-line tools, so commands and subcommands get their dependencies from an injectable factory and can be tested without global mutable state.
 
-**Dependency:** `.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.1.0")`
+**Dependency:** `.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.2.0")`
 **Platforms:** macOS 15+ | **Swift:** 6.0 | **Depends on:** swift-argument-parser 1.7.0+
 
 This skill lives in the package repo it documents (`Skills/NnArgumentParser`), so an API change and its

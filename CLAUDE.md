@@ -4,7 +4,8 @@ A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift
 adding a dependency-injection seam for command-line tools, plus an interaction-mode system for
 suppressing prompts in automated contexts.
 
-- `Sources/NnArgumentParser` — the library. `NnRootCommand`, `InteractionMode`, `InteractivityOptions`.
+- `Sources/NnArgumentParser` — the library. `NnRootCommand`, `InteractionMode`,
+  `InteractivityOptions`, `CaseInsensitiveArgument`, `KeyValueArgument`.
 - `Sources/NnArgumentParserTesting` — `testRun`, for driving whole commands in tests.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
 
@@ -25,10 +26,8 @@ until the migration, a gap nothing detected.
 
 ### Rules
 
-- **A PR changing the public API must also touch `Skills/`.** `.github/workflows/skill-docs.yml`
-  enforces this: it fails any PR whose diff adds or removes `public`/`open`/`package` declarations
-  under `Sources/` without touching `Skills/`. Apply the **`skip-skill-check`** label when a PR
-  genuinely changes no documented behavior — reformatting, renaming a local parameter, moving a file.
+- **A PR changing the public API must also touch `Skills/`.** No PR workflow currently enforces
+  this, so verify the source and skill changes together in the diff.
 - **`Skills/NnArgumentParser/.claude-plugin/plugin.json` deliberately has no `version` field.**
   Do not reintroduce one. Git-based sources are cached by commit sha, so a hand-typed version number
   is a second source of truth that nothing verifies — exactly the staleness this layout removes.
@@ -38,6 +37,10 @@ until the migration, a gap nothing detected.
   with `swift package describe --type json` if that ever seems in doubt.
 
 ## Releasing
+
+Release preparation is configured in `.nnex/manifest.json` for the `main` branch and the
+`NnArgumentParser` library target. Its AI tasks cover updates to the README, agent docs, and Swift
+reference skill.
 
 The marketplace entry is **pinned to a release tag**, not to `main`. Two consequences:
 

@@ -27,6 +27,8 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **Parallel-safe** — thread-local storage, so concurrent tests can't clobber each other
 - **End-to-end testing** — `testRun` parses arguments, runs the command, and returns its stdout
 - **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
+- **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
+- **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
 - **ArgumentParser re-export** — one import gets you both
 
 ## Requirements
@@ -39,7 +41,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.1.0")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.2.0")
 ```
 
 Then add the product to your target:
@@ -132,6 +134,47 @@ Subcommands stay plain `ParsableCommand`s. One conformance, at the `@main` type,
 Vend primitives — a shell, a file system, a picker — and let each command assemble its own feature
 from them. A factory with a method per feature becomes a service locator, and every command ends up
 depending on all of it.
+
+## Parsing Common Argument Shapes
+
+### Case-insensitive enum arguments
+
+Conform a `String`-backed, `CaseIterable` enum to `CaseInsensitiveArgument` to accept values in any
+letter casing:
+
+```swift
+enum DiscardScope: String, CaseIterable, CaseInsensitiveArgument {
+    case staged, unstaged, both
+}
+
+struct Discard: ParsableCommand {
+    @Option var scope: DiscardScope = .both
+}
+```
+
+With this conformance, `--scope staged`, `--scope Staged`, and `--scope STAGED` all parse as
+`.staged`. Only command-line parsing becomes case-insensitive; help, shell completion,
+`init?(rawValue:)`, and synthesized `Codable` conformance continue to use the exact raw values.
+
+### Key-value options
+
+Use `KeyValueArgument` for repeatable `<key>=<value>` options, then call `asDictionary()` to collect
+them:
+
+```swift
+struct BuildOptions: ParsableArguments {
+    @Option(name: .customLong("build-command"), parsing: .singleValue, help: "A target's build command, as <target>=<command>.")
+    var build: [KeyValueArgument] = []
+
+    var buildCommands: [String: String] {
+        return build.asDictionary()
+    }
+}
+```
+
+Parsing splits on the first `=` only, so a value can contain additional `=` characters. Both the
+key and value must be non-empty, surrounding whitespace is preserved, and when a key is repeated,
+`asDictionary()` keeps its last value.
 
 ## Supporting Non-Interactive Callers
 
