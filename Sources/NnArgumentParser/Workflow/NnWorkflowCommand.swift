@@ -8,7 +8,7 @@
 import ArgumentParser
 
 public protocol NnWorkflowCommand: ParsableCommand {
-    associatedtype Workflow: NnCommandWorkflow
+    associatedtype Workflow: NnWorkflow
 
     func makeWorkflow() throws -> Workflow
     func handleResults(_ results: Workflow.ResolverType.Results) throws

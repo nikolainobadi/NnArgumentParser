@@ -1,12 +1,12 @@
 //
-//  NnCommandWorkflow.swift
+//  NnWorkflow.swift
 //  NnArgumentParser
 //
 //  Created by Nikolai Nobadi on 10/3/26.
 //
 
 // MARK: - Workflow
-public protocol NnCommandWorkflow {
+public protocol NnWorkflow {
     associatedtype InspectorType: NnCommandInspector
 
     associatedtype InspectionInterpreter: NnCommandInterpreter
@@ -29,7 +29,7 @@ public protocol NnCommandWorkflow {
 }
 
 // MARK: - Run
-public extension NnCommandWorkflow {
+public extension NnWorkflow {
     func run() throws -> ResolverType.Results {
         let inspection = try inspector.inspect()
         let collectionContext = try inspectionInterpreter.interpret(inspection)
