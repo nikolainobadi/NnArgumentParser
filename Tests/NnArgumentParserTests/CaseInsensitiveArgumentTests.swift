@@ -8,9 +8,6 @@
 import Testing
 @testable import NnArgumentParser
 
-/// Covers what a caller is allowed to type for an enum option, and what the tool still advertises
-/// in return. The protocol replaces only the initializer, so the tests pin both halves: parsing
-/// loosens, and everything ArgumentParser derives from `rawValue` does not.
 struct CaseInsensitiveArgumentTests {
     @Test
     func `A value written exactly as its case is spelled parses`() {
@@ -56,9 +53,6 @@ extension CaseInsensitiveArgumentTests {
 
 // MARK: - Collisions
 extension CaseInsensitiveArgumentTests {
-    /// Regression guard. A case-insensitive scan alone resolves both spellings to whichever case
-    /// `allCases` yields first, leaving the other permanently unreachable and saying nothing about
-    /// it. The exact-match pass is what keeps them apart.
     @Test
     func `Raw values differing only by case each stay reachable by their exact spelling`() {
         #expect(Collides(argument: "run") == .lower)
@@ -73,8 +67,6 @@ extension CaseInsensitiveArgumentTests {
 
 // MARK: - Advertised Values
 extension CaseInsensitiveArgumentTests {
-    /// Conforming must not quietly lowercase what `--help` and shell completion offer. Only parsing
-    /// is meant to loosen.
     @Test
     func `Advertised values keep their exact raw-value casing`() {
         #expect(Project.allValueStrings == ["SwiftPackage", "iOSApp"])

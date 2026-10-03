@@ -7,19 +7,19 @@
   },
   "files": {
     "Sources/NnArgumentParser/Exports.swift": "9a78fc1f2982cc67c611951389f26b00c0313bc65c86f02b86ead7addcb6b32c",
-    "Sources/NnArgumentParser/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
-    "Sources/NnArgumentParser/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
-    "Sources/NnArgumentParser/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
-    "Sources/NnArgumentParser/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
-    "Sources/NnArgumentParser/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
+    "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
+    "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
     "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6",
-    "Sources/NnArgumentParser/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
-    "Sources/NnArgumentParser/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a"
+    "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
+    "Sources/NnArgumentParser/Arguments/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a"
   },
   "types": [
     {
       "name": "NnRootCommand",
-      "file": "Sources/NnArgumentParser/NnRootCommand.swift",
+      "file": "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift",
       "doc": "ApiReference.md",
       "anchor": "NnRootCommand",
       "conforms": [
@@ -28,7 +28,7 @@
     },
     {
       "name": "InteractionMode",
-      "file": "Sources/NnArgumentParser/InteractionMode.swift",
+      "file": "Sources/NnArgumentParser/Interactivity/InteractionMode.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractionMode",
       "conforms": [
@@ -38,7 +38,7 @@
     },
     {
       "name": "InteractivityOptions",
-      "file": "Sources/NnArgumentParser/InteractivityOptions.swift",
+      "file": "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractivityOptions",
       "conforms": [
@@ -54,7 +54,7 @@
     },
     {
       "name": "CaseInsensitiveArgument",
-      "file": "Sources/NnArgumentParser/CaseInsensitiveArgument.swift",
+      "file": "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift",
       "doc": "ApiReference.md",
       "anchor": "CaseInsensitiveArgument",
       "conforms": [
@@ -65,7 +65,7 @@
     },
     {
       "name": "KeyValueArgument",
-      "file": "Sources/NnArgumentParser/KeyValueArgument.swift",
+      "file": "Sources/NnArgumentParser/Arguments/KeyValueArgument.swift",
       "doc": "ApiReference.md",
       "anchor": "KeyValueArgument",
       "conforms": [
