@@ -13,10 +13,10 @@ public protocol NnWorkflow {
     where InspectorType.Facts == InspectionInterpreter.Input
 
     associatedtype CollectorType: NnCommandCollector
-    where InspectionInterpreter.Output == CollectorType.Context
+    where InspectionInterpreter.Output == CollectorType.Questions
 
     associatedtype CollectionInterpreter: NnCommandInterpreter
-    where CollectorType.Results == CollectionInterpreter.Input
+    where CollectorType.Answers == CollectionInterpreter.Input
 
     associatedtype ResolverType: NnCommandResolver
     where CollectionInterpreter.Output == ResolverType.Context
@@ -32,9 +32,9 @@ public protocol NnWorkflow {
 public extension NnWorkflow {
     func run() throws -> ResolverType.Results {
         let inspection = try inspector.inspect()
-        let collectionContext = try inspectionInterpreter.interpret(inspection)
-        let collection = try collector.collect(context: collectionContext)
-        let resolutionContext = try collectionInterpreter.interpret(collection)
+        let questions = try inspectionInterpreter.interpret(inspection)
+        let answers = try collector.collect(questions: questions)
+        let resolutionContext = try collectionInterpreter.interpret(answers)
 
         return try resolver.resolve(context: resolutionContext)
     }
@@ -48,10 +48,10 @@ public protocol NnCommandInspector {
 }
 
 public protocol NnCommandCollector {
-    associatedtype Context
-    associatedtype Results
+    associatedtype Questions: Sendable
+    associatedtype Answers: Sendable
 
-    func collect(context: Context) throws -> Results
+    func collect(questions: Questions) throws -> Answers
 }
 
 public protocol NnCommandResolver {
