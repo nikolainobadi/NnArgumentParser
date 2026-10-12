@@ -10,7 +10,7 @@ public protocol NnWorkflow {
     associatedtype InspectorType: NnCommandInspector
 
     associatedtype InspectionInterpreter: NnCommandInterpreter
-    where InspectorType.Results == InspectionInterpreter.Input
+    where InspectorType.Facts == InspectionInterpreter.Input
 
     associatedtype CollectorType: NnCommandCollector
     where InspectionInterpreter.Output == CollectorType.Context
@@ -42,9 +42,9 @@ public extension NnWorkflow {
 
 // MARK: - Stages
 public protocol NnCommandInspector {
-    associatedtype Results
+    associatedtype Facts: Sendable
 
-    func inspect() throws -> Results
+    func inspect() throws -> Facts
 }
 
 public protocol NnCommandCollector {
