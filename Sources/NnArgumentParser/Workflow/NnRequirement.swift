@@ -11,6 +11,18 @@ public enum NnRequirement<Value: Sendable, Info: Sendable>: Sendable {
     case unknown(Info)
 }
 
+// MARK: - Ask
+public extension NnRequirement {
+    // Asks only when unknown; nil means the value was already known.
+    func ask(_ asker: (Info) throws -> Value) rethrows -> Value? {
+        guard case .unknown(let info) = self else {
+            return nil
+        }
+
+        return try asker(info)
+    }
+}
+
 // MARK: - Resolve
 public extension NnRequirement {
     func resolve(answer: Value?) throws -> Value {
