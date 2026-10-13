@@ -1,0 +1,12 @@
+{
+  "targets" : [
+    {
+      "buildAndTestCommands" : [
+        "swift build"
+      ],
+      "name" : "NnArgumentParser",
+      "path" : ".",
+      "targetType" : "library"
+    }
+  ]
+}
