@@ -13,11 +13,11 @@ public protocol NnWorkflow {
     where InspectionInterpreter.Facts == InspectorType.Facts
 
     associatedtype CollectorType: NnCommandCollector
-    where CollectorType.Questions == InspectionInterpreter.Questions
+    where CollectorType.Requirements == InspectionInterpreter.Requirements
 
     associatedtype CollectionInterpreter: NnCollectionInterpreter
-    where CollectionInterpreter.Facts == InspectorType.Facts,
-          CollectionInterpreter.Questions == CollectorType.Questions,
+    where CollectionInterpreter.Findings == InspectionInterpreter.Findings,
+          CollectionInterpreter.Requirements == CollectorType.Requirements,
           CollectionInterpreter.Answers == CollectorType.Answers
 
     associatedtype ResolverType: NnCommandResolver
@@ -32,11 +32,18 @@ public protocol NnWorkflow {
 
 // MARK: - Run
 public extension NnWorkflow {
-    func run() throws -> ResolverType.Results {
+    // A non-interactive run stops here when anything is missing, so no stage ever reaches a prompt.
+    func run(isInteractive: Bool) throws -> ResolverType.Results {
         let facts = try inspector.inspect()
-        let questions = try inspectionInterpreter.interpret(facts: facts)
-        let answers = try collector.collect(questions: questions)
-        let context = try collectionInterpreter.interpret(facts: facts, questions: questions, answers: answers)
+        let inspection = try inspectionInterpreter.interpret(facts: facts)
+        let unsatisfied = isInteractive ? [] : inspection.requirements.unsatisfied
+
+        if !unsatisfied.isEmpty {
+            throw NnWorkflowError.unsatisfiedRequirements(unsatisfied)
+        }
+
+        let answers = try collector.collect(requirements: inspection.requirements)
+        let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
         return try resolver.resolve(context: context)
     }
@@ -51,30 +58,31 @@ public protocol NnCommandInspector {
 
 public protocol NnInspectionInterpreter {
     associatedtype Facts: Sendable
-    associatedtype Questions: Sendable
+    associatedtype Findings: Sendable
+    associatedtype Requirements: NnRequirements
 
-    func interpret(facts: Facts) throws -> Questions
+    func interpret(facts: Facts) throws -> NnInspection<Findings, Requirements>
 }
 
 public protocol NnCommandCollector {
-    associatedtype Questions: Sendable
+    associatedtype Requirements: NnRequirements
     associatedtype Answers: Sendable
 
-    func collect(questions: Questions) throws -> Answers
+    func collect(requirements: Requirements) throws -> Answers
 }
 
 public protocol NnCollectionInterpreter {
-    associatedtype Facts: Sendable
-    associatedtype Questions: Sendable
+    associatedtype Findings: Sendable
+    associatedtype Requirements: NnRequirements
     associatedtype Answers: Sendable
-    associatedtype Context
+    associatedtype Context: Sendable
 
-    func interpret(facts: Facts, questions: Questions, answers: Answers) throws -> Context
+    func interpret(findings: Findings, requirements: Requirements, answers: Answers) throws -> Context
 }
 
 public protocol NnCommandResolver {
-    associatedtype Context
-    associatedtype Results
+    associatedtype Context: Sendable
+    associatedtype Results: Sendable
 
     func resolve(context: Context) throws -> Results
 }
