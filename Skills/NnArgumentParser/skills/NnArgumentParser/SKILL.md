@@ -1,6 +1,6 @@
 ---
 name: NnArgumentParser
-description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, or testing commands end-to-end with testRun and an injected mock factory.
+description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, structuring a command as an inspect/collect/resolve pipeline with NnWorkflow / NnWorkflowCommand / NnRequirement / NnCommandInspector / NnCommandCollector / NnCommandResolver, testing workflows with MockCommandInspector / MockCommandCollector / MockCommandResolver, or testing commands end-to-end with testRun and an injected mock factory.
 user-invocable: true
 ---
 
@@ -19,7 +19,8 @@ documentation land in the same PR.
 | File | Purpose | Load When |
 |------|---------|-----------|
 | `ApiReference.md` | `NnRootCommand` protocol, the `contextFactory` injection seam, `InteractionMode` / `InteractivityOptions`, and the re-exported ArgumentParser surface | Building a CLI root command, wiring the factory, `defaultFactory` vs `contextFactory`, suppressing prompts |
-| `TestingReference.md` | `testRun(contextFactory:args:interactionMode:)` and the command-testing pattern (inject a mock factory, run, assert on outcomes) | Writing tests that drive whole commands end-to-end, or testing the interactivity flags |
+| `WorkflowReference.md` | `NnWorkflow` and its five stage protocols, `NnInspection`, `NnRequirement`, `NnWorkflowError`, the passthrough stages, `NnWorkflowCommand`, and what each stage may and may not do | Structuring a command's `run()` as inspect → collect → resolve, asking only for missing input, wiring a workflow in `makeWorkflow()` |
+| `TestingReference.md` | `testRun(contextFactory:args:interactionMode:)`, the command-testing pattern (inject a mock factory, run, assert on outcomes), and the workflow stage mocks | Writing tests that drive whole commands end-to-end, testing the interactivity flags, or testing a workflow's stages |
 
 ## Quick Reference
 
@@ -46,9 +47,18 @@ documentation land in the same PR.
 - **`[KeyValueArgument].asDictionary()`** — folds pairs into `[String: String]`; a repeated key resolves to the last value.
 - **Put the shape in your help string** — `KeyValueArgument` can't describe itself in `--help` or in its parse error, so write `help: "... as <target>=<command>."`
 
+### Workflows
+- **NnWorkflow** — five stages with type-checked hand-offs: `inspector` → `inspectionInterpreter` → `collector` → `collectionInterpreter` → `resolver`. `run()` (extension) calls them in order and returns `Results`; the first throw stops the run.
+- **Stage jobs** — *Inspect* gathers facts and makes no decisions. *Collect* prompts only for **missing** info, and it's optional. *Resolve* does the work through use cases, which may prompt only for **additional** info that comes up mid-work. The interpreters make the decisions.
+- **NnInspection<Findings, Requirements>** — what the inspection interpreter returns. Findings skip the collector; requirements go to it.
+- **NnRequirement<Value, Info>** — `.known(Value)` or `.unknown(Info)`. `ask(_:)` (collector) prompts only when unknown and returns `nil` when known. `resolve(answer:)` (collection interpreter) returns the known value or the answer, or throws `NnWorkflowError.missingAnswer`.
+- **Passthrough stages** — `NnPassthroughCollector` plus `NnPassthroughCollectionInterpreter<Findings>` for commands that ask nothing. The findings become the resolver's context.
+- **NnWorkflowCommand** — a `ParsableCommand` that implements `makeWorkflow()` (its composition root) and `handleResults(_:)` (printing). `run()` is provided.
+
 ### Testing
 - **testRun(contextFactory:args:interactionMode:)** — from `NnArgumentParserTesting`: injects an optional factory, parses `args` against the root command, runs it, returns captured stdout (trimmed). `@discardableResult`.
 - **Non-interactive by default** — `interactionMode` defaults to `.nonInteractive(assumeYes: false)` and is applied *after* parsing, so a test hitting a prompt fails rather than hanging. Pass `nil` when the test is about the flags themselves.
+- **Workflow mocks** — `MockCommandInspector(facts:throwError:)`, `MockCommandCollector(answers:throwError:)`, `MockCommandResolver(results:throwError:)` record `inspectCallCount` / `capturedRequirements` / `capturedContexts`. When `throwError` is true they throw `MockWorkflowError.stageFailed`. Interpreters have no mocks; test them directly.
 - **Pattern** — pass a test double of *your* `Factory` to `testRun`, run the command, assert on stdout or the outcome. NnArgumentParser is agnostic about what the factory vends; for mocking specific infrastructure (file systems, pickers) see the **NnFileKit** / **SwiftPickerKit** skills.
 
 ## Examples
@@ -64,6 +74,12 @@ documentation land in the same PR.
 - "Why does my enum option reject uppercase values?" -> Loads ApiReference.md
 - "How do I parse a --define key=value option?" -> Loads ApiReference.md
 - "How do I collect repeated key=value flags into a dictionary?" -> Loads ApiReference.md
+- "How should I structure a command that checks state, prompts, then does work?" -> Loads WorkflowReference.md
+- "How do I only prompt for values the user didn't pass as flags?" -> Loads WorkflowReference.md
+- "What's the difference between findings and requirements?" -> Loads WorkflowReference.md
+- "My command has nothing to ask. Do I need a collector?" -> Loads WorkflowReference.md
+- "Why am I getting NnWorkflowError.missingAnswer?" -> Loads WorkflowReference.md
+- "How do I test a workflow's interpreters and resolver?" -> Loads TestingReference.md
 - "How do I test a command end-to-end?" -> Loads TestingReference.md
 - "How do I assert a command's printed output in a test?" -> Loads TestingReference.md
 - "Why does my test ignore the --non-interactive flag I passed?" -> Loads TestingReference.md
