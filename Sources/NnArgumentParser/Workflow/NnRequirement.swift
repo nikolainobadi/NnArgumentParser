@@ -41,22 +41,9 @@ public extension NnRequirement {
     }
 }
 
-// MARK: - Report
-public extension NnRequirement {
-    // Nil when known, so a requirements type can build its unsatisfied list as a compactMap over its fields.
-    func report(name: String, flagHint: String?, remedy: (Info) -> String) -> NnUnsatisfiedRequirement? {
-        guard case .unknown(let info) = self else {
-            return nil
-        }
-
-        return .init(name: name, flagHint: flagHint, remedy: remedy(info))
-    }
-}
-
 // MARK: - Error
 public enum NnWorkflowError: Error, Equatable {
     case missingAnswer
-    case unsatisfiedRequirements([NnUnsatisfiedRequirement])
 }
 
 // MARK: - LocalizedError
@@ -65,23 +52,6 @@ extension NnWorkflowError: LocalizedError {
         switch self {
         case .missingAnswer:
             return "A required value was neither known nor answered."
-        case .unsatisfiedRequirements(let requirements):
-            let lines = requirements.map(Self.describe)
-
-            return (["This run can't prompt, and these values are missing:"] + lines).joined(separator: "\n")
         }
-    }
-}
-
-// MARK: - Private Methods
-private extension NnWorkflowError {
-    static func describe(_ requirement: NnUnsatisfiedRequirement) -> String {
-        let line = "  \(requirement.name): \(requirement.remedy)"
-
-        guard let flagHint = requirement.flagHint, !flagHint.isEmpty else {
-            return line
-        }
-
-        return "\(line) Pass \(flagHint)."
     }
 }

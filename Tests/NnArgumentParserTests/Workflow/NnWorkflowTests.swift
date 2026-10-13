@@ -12,62 +12,14 @@ import NnArgumentParserTesting
 struct NnWorkflowTests {
     @Test
     func `Stages run in order and each receives the previous stage's output`() throws {
-        let (sut, mocks) = makeSUT(findings: "derived from facts", answers: "typed")
+        let (sut, mocks) = makeSUT(findings: "derived from facts", requirements: "needed", answers: "typed")
 
-        let results = try sut.run(isInteractive: true)
+        let results = try sut.run()
 
         #expect(results == "results")
         #expect(mocks.inspector.inspectCallCount == 1)
-        #expect(mocks.collector.capturedRequirements == [.init(unsatisfied: [])])
+        #expect(mocks.collector.capturedRequirements == ["needed"])
         #expect(mocks.resolver.capturedContexts == [.init(findings: "derived from facts", answers: "typed")])
-    }
-}
-
-
-// MARK: - Preflight
-extension NnWorkflowTests {
-    @Test
-    func `A non-interactive run with unsatisfied requirements throws before the collector is called`() {
-        let unsatisfied = [NnUnsatisfiedRequirement(name: "version", flagHint: "<version>", remedy: "No version.")]
-        let (sut, mocks) = makeSUT(requirements: .init(unsatisfied: unsatisfied))
-
-        #expect(throws: NnWorkflowError.unsatisfiedRequirements(unsatisfied)) {
-            try sut.run(isInteractive: false)
-        }
-        #expect(mocks.collector.capturedRequirements.isEmpty)
-        #expect(mocks.resolver.capturedContexts.isEmpty)
-    }
-
-    @Test
-    func `A non-interactive error lists every unsatisfied requirement, not only the first`() {
-        let unsatisfied = [
-            NnUnsatisfiedRequirement(name: "version", flagHint: "<version>", remedy: "No version."),
-            NnUnsatisfiedRequirement(name: "target", flagHint: "--target", remedy: "Two libraries.")
-        ]
-        let (sut, _) = makeSUT(requirements: .init(unsatisfied: unsatisfied))
-
-        #expect(throws: NnWorkflowError.unsatisfiedRequirements(unsatisfied)) {
-            try sut.run(isInteractive: false)
-        }
-    }
-
-    @Test
-    func `An interactive run with unsatisfied requirements reaches the collector`() throws {
-        let unsatisfied = [NnUnsatisfiedRequirement(name: "version", flagHint: "<version>", remedy: "No version.")]
-        let (sut, mocks) = makeSUT(requirements: .init(unsatisfied: unsatisfied))
-
-        _ = try sut.run(isInteractive: true)
-
-        #expect(mocks.collector.capturedRequirements == [.init(unsatisfied: unsatisfied)])
-    }
-
-    @Test
-    func `A non-interactive run with nothing unsatisfied reaches the resolver`() throws {
-        let (sut, mocks) = makeSUT()
-
-        _ = try sut.run(isInteractive: false)
-
-        #expect(mocks.resolver.capturedContexts.count == 1)
     }
 }
 
@@ -80,13 +32,13 @@ extension NnWorkflowTests {
         let resolver = MockCommandResolver<String, String>(results: "results", throwError: false)
         let sut = PassthroughWorkflow(
             inspector: inspector,
-            inspectionInterpreter: .init(findings: "findings", requirements: .init()),
+            inspectionInterpreter: .init(findings: "findings", requirements: ()),
             collector: .init(),
             collectionInterpreter: .init(),
             resolver: resolver
         )
 
-        let results = try sut.run(isInteractive: false)
+        let results = try sut.run()
 
         #expect(results == "results")
         #expect(resolver.capturedContexts == ["findings"])
@@ -101,7 +53,7 @@ extension NnWorkflowTests {
         let (sut, mocks) = makeSUT(inspectorThrows: true)
 
         #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run(isInteractive: true)
+            try sut.run()
         }
         #expect(mocks.collector.capturedRequirements.isEmpty)
     }
@@ -111,7 +63,7 @@ extension NnWorkflowTests {
         let (sut, mocks) = makeSUT(collectorThrows: true)
 
         #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run(isInteractive: true)
+            try sut.run()
         }
         #expect(mocks.resolver.capturedContexts.isEmpty)
     }
@@ -121,7 +73,7 @@ extension NnWorkflowTests {
         let (sut, _) = makeSUT(resolverThrows: true)
 
         #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run(isInteractive: true)
+            try sut.run()
         }
     }
 }
@@ -131,7 +83,7 @@ extension NnWorkflowTests {
 private extension NnWorkflowTests {
     func makeSUT(
         findings: String = "findings",
-        requirements: StubRequirements = .init(unsatisfied: []),
+        requirements: String = "requirements",
         answers: String = "answers",
         results: String = "results",
         inspectorThrows: Bool = false,
@@ -139,7 +91,7 @@ private extension NnWorkflowTests {
         resolverThrows: Bool = false
     ) -> (sut: StubWorkflow, mocks: Mocks) {
         let inspector = MockCommandInspector(facts: "facts", throwError: inspectorThrows)
-        let collector = MockCommandCollector<StubRequirements, String>(answers: answers, throwError: collectorThrows)
+        let collector = MockCommandCollector<String, String>(answers: answers, throwError: collectorThrows)
         let resolver = MockCommandResolver<StubContext, String>(results: results, throwError: resolverThrows)
         let sut = StubWorkflow(
             inspector: inspector,
@@ -157,12 +109,8 @@ private extension NnWorkflowTests {
 // MARK: - Test Doubles
 private struct Mocks {
     let inspector: MockCommandInspector<String>
-    let collector: MockCommandCollector<StubRequirements, String>
+    let collector: MockCommandCollector<String, String>
     let resolver: MockCommandResolver<StubContext, String>
-}
-
-private struct StubRequirements: NnRequirements, Equatable {
-    let unsatisfied: [NnUnsatisfiedRequirement]
 }
 
 private struct StubContext: Sendable, Equatable {
@@ -170,7 +118,7 @@ private struct StubContext: Sendable, Equatable {
     let answers: String
 }
 
-private struct StubInspectionInterpreter<Requirements: NnRequirements>: NnInspectionInterpreter {
+private struct StubInspectionInterpreter<Requirements: Sendable>: NnInspectionInterpreter {
     let findings: String
     let requirements: Requirements
 
@@ -180,22 +128,22 @@ private struct StubInspectionInterpreter<Requirements: NnRequirements>: NnInspec
 }
 
 private struct StubCollectionInterpreter: NnCollectionInterpreter {
-    func interpret(findings: String, requirements: StubRequirements, answers: String) throws -> StubContext {
+    func interpret(findings: String, requirements: String, answers: String) throws -> StubContext {
         return .init(findings: findings, answers: answers)
     }
 }
 
 private struct StubWorkflow: NnWorkflow {
     let inspector: MockCommandInspector<String>
-    let inspectionInterpreter: StubInspectionInterpreter<StubRequirements>
-    let collector: MockCommandCollector<StubRequirements, String>
+    let inspectionInterpreter: StubInspectionInterpreter<String>
+    let collector: MockCommandCollector<String, String>
     let collectionInterpreter: StubCollectionInterpreter
     let resolver: MockCommandResolver<StubContext, String>
 }
 
 private struct PassthroughWorkflow: NnWorkflow {
     let inspector: MockCommandInspector<String>
-    let inspectionInterpreter: StubInspectionInterpreter<NnNoRequirements>
+    let inspectionInterpreter: StubInspectionInterpreter<Void>
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<String>
     let resolver: MockCommandResolver<String, String>

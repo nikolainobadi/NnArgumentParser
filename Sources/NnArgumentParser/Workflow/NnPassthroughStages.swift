@@ -5,27 +5,27 @@
 //  Created by Nikolai Nobadi on 10/12/26.
 //
 
-// Fixed to NnNoRequirements so a command with real requirements can't compile with a collector that never asks.
+// For commands with nothing to ask: requirements and answers are both Void.
 
 // MARK: - Collector
 public struct NnPassthroughCollector: NnCommandCollector {
-    public typealias Requirements = NnNoRequirements
+    public typealias Requirements = Void
     public typealias Answers = Void
 
     public init() { }
 
-    public func collect(requirements: NnNoRequirements) throws { }
+    public func collect(requirements: Void) throws { }
 }
 
 // MARK: - Collection Interpreter
 public struct NnPassthroughCollectionInterpreter<Findings: Sendable>: NnCollectionInterpreter {
-    public typealias Requirements = NnNoRequirements
+    public typealias Requirements = Void
     public typealias Answers = Void
     public typealias Context = Findings
 
     public init() { }
 
-    public func interpret(findings: Findings, requirements: NnNoRequirements, answers: Void) throws -> Findings {
+    public func interpret(findings: Findings, requirements: Void, answers: Void) throws -> Findings {
         return findings
     }
 }

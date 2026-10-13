@@ -55,23 +55,10 @@ extension NnRequirementTests {
             try makeSUT(unknown: 7).resolve(answer: nil)
         }
     }
-}
-
-
-// MARK: - Report
-extension NnRequirementTests {
-    @Test
-    func `Reporting a known requirement returns nil`() {
-        let report = makeSUT(known: "configured").report(name: "version", flagHint: "<version>") { _ in "unused" }
-
-        #expect(report == nil)
-    }
 
     @Test
-    func `Reporting an unknown requirement carries the name, flag hint, and a remedy built from info`() {
-        let report = makeSUT(unknown: 7).report(name: "version", flagHint: "<version>") { info in "Seen \(info) candidates." }
-
-        #expect(report == .init(name: "version", flagHint: "<version>", remedy: "Seen 7 candidates."))
+    func `A missing answer describes itself`() {
+        #expect(NnWorkflowError.missingAnswer.errorDescription == "A required value was neither known nor answered.")
     }
 }
 

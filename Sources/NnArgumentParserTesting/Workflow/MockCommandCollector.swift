@@ -7,7 +7,7 @@
 
 import NnArgumentParser
 
-public final class MockCommandCollector<Requirements: NnRequirements, Answers: Sendable> {
+public final class MockCommandCollector<Requirements: Sendable, Answers: Sendable> {
     private let answers: Answers
     private let throwError: Bool
 

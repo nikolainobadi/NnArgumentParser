@@ -32,16 +32,9 @@ public protocol NnWorkflow {
 
 // MARK: - Run
 public extension NnWorkflow {
-    // A non-interactive run stops here when anything is missing, so no stage ever reaches a prompt.
-    func run(isInteractive: Bool) throws -> ResolverType.Results {
+    func run() throws -> ResolverType.Results {
         let facts = try inspector.inspect()
         let inspection = try inspectionInterpreter.interpret(facts: facts)
-        let unsatisfied = isInteractive ? [] : inspection.requirements.unsatisfied
-
-        if !unsatisfied.isEmpty {
-            throw NnWorkflowError.unsatisfiedRequirements(unsatisfied)
-        }
-
         let answers = try collector.collect(requirements: inspection.requirements)
         let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
@@ -59,13 +52,13 @@ public protocol NnCommandInspector {
 public protocol NnInspectionInterpreter {
     associatedtype Facts: Sendable
     associatedtype Findings: Sendable
-    associatedtype Requirements: NnRequirements
+    associatedtype Requirements: Sendable
 
     func interpret(facts: Facts) throws -> NnInspection<Findings, Requirements>
 }
 
 public protocol NnCommandCollector {
-    associatedtype Requirements: NnRequirements
+    associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
 
     func collect(requirements: Requirements) throws -> Answers
@@ -73,7 +66,7 @@ public protocol NnCommandCollector {
 
 public protocol NnCollectionInterpreter {
     associatedtype Findings: Sendable
-    associatedtype Requirements: NnRequirements
+    associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
     associatedtype Context: Sendable
 

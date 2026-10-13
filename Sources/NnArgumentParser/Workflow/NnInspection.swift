@@ -6,7 +6,7 @@
 //
 
 // What the inspection interpreter learned, and what it still needs before the resolver can run.
-public struct NnInspection<Findings: Sendable, Requirements: NnRequirements>: Sendable {
+public struct NnInspection<Findings: Sendable, Requirements: Sendable>: Sendable {
     public let findings: Findings
     public let requirements: Requirements
 
