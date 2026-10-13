@@ -39,6 +39,80 @@ extension NnRootCommand {
 - Always calls `InteractionMode.reset()` on the way out, so no mode leaks to the next test on that thread.
 <!-- /type:testRun -->
 
+<!-- type:MockCommandInspector -->
+## Workflow stage mocks
+
+Test doubles for the three side-effecting `NnWorkflow` stages. All are `final class`es that record what they received and return a canned value. Pass `throwError: true` to make the stage throw `MockWorkflowError.stageFailed` instead.
+
+```swift
+public final class MockCommandInspector<Facts: Sendable>: NnCommandInspector {
+    public private(set) var inspectCallCount: Int
+    public init(facts: Facts, throwError: Bool)
+}
+
+public final class MockCommandCollector<Requirements: Sendable, Answers: Sendable>: NnCommandCollector {
+    public private(set) var capturedRequirements: [Requirements]
+    public init(answers: Answers, throwError: Bool)
+}
+
+public final class MockCommandResolver<Context: Sendable, Results: Sendable>: NnCommandResolver {
+    public private(set) var capturedContexts: [Context]
+    public init(results: Results, throwError: Bool)
+}
+
+public enum MockWorkflowError: Error, Equatable {
+    case stageFailed
+}
+```
+
+| Mock | Returns | Records |
+|------|---------|---------|
+| `MockCommandInspector` | `facts` | `inspectCallCount` |
+| `MockCommandCollector` | `answers` | `capturedRequirements`, each `requirements` value it was asked to collect |
+| `MockCommandResolver` | `results` | `capturedContexts`, each `context` it was asked to resolve |
+
+There are **no interpreter mocks.** Interpreters are pure functions of their inputs, so test them directly: call `interpret(...)` and assert on the returned findings, requirements, or context. Mock the stages *around* the one under test.
+
+### Usage Example
+
+```swift
+import Testing
+import NnArgumentParser
+import NnArgumentParserTesting
+
+struct PublishWorkflowTests {
+    @Test
+    func `An omitted version is collected and reaches the resolver`() throws {
+        let inspector = MockCommandInspector(facts: PublishFacts(latestTag: "1.2.0"), throwError: false)
+        let collector = MockCommandCollector<PublishRequirements, PublishAnswers>(answers: .init(version: .exact("1.3.0")), throwError: false)
+        let resolver = MockCommandResolver<PublishContext, PublishResults>(results: .published, throwError: false)
+        let sut = TestWorkflow(
+            inspector: inspector,
+            inspectionInterpreter: .init(requestedVersion: nil),
+            collector: collector,
+            collectionInterpreter: .init(),
+            resolver: resolver
+        )
+
+        _ = try sut.run()
+
+        #expect(resolver.capturedContexts.map(\.version) == [.exact("1.3.0")])
+    }
+}
+
+// The workflow under test, with the real interpreters and mocked edges.
+private struct TestWorkflow: NnWorkflow {
+    let inspector: MockCommandInspector<PublishFacts>
+    let inspectionInterpreter: PublishInspectionInterpreter
+    let collector: MockCommandCollector<PublishRequirements, PublishAnswers>
+    let collectionInterpreter: PublishCollectionInterpreter
+    let resolver: MockCommandResolver<PublishContext, PublishResults>
+}
+```
+
+To stop a run at a given stage, pass `throwError: true` and assert with `#expect(throws: MockWorkflowError.stageFailed)`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
+<!-- /type:MockCommandInspector -->
+
 ## Tests are non-interactive by default
 
 `testRun` registers `.nonInteractive(assumeYes: false)` unless told otherwise. A test that reaches a prompt therefore **fails instead of blocking the suite** on input that will never arrive.
@@ -107,3 +181,6 @@ Have your factory's test double vend those mocks, then inject the factory via `t
 - **Leave `interactionMode` at its default** unless the test is *about* interactivity. The non-interactive default is a guardrail against a hung suite.
 - **Pass `interactionMode: nil` to exercise the flags** — otherwise the default silently overrides whatever `--non-interactive` / `--yes` you put in `args`.
 - **Don't call `InteractionMode.reset()` yourself after `testRun`** — it already does, in a `defer`. Do reset if you registered a mode outside a `testRun` call.
+- **Test workflow interpreters directly.** They're pure, so give them inputs and assert on outputs, without mocks.
+- **Test a workflow's wiring with the stage mocks.** Use real interpreters between a `MockCommandInspector` and a `MockCommandResolver`, then assert on `capturedContexts`.
+- **Test an `NnWorkflowCommand` end-to-end with `testRun`**, like any other command. It runs `makeWorkflow()` against your injected factory.

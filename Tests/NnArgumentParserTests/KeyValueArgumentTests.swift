@@ -8,9 +8,6 @@
 import Testing
 @testable import NnArgumentParser
 
-/// Covers the pair as the parser sees it. The separator rules are the whole contract here — a value
-/// is often a shell command that carries its own `=`, so where the split happens decides whether a
-/// caller's command survives intact.
 struct KeyValueArgumentTests {
     @Test
     func `A key and value separated by equals parses into both halves`() throws {

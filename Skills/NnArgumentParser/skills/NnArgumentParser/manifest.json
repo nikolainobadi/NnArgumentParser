@@ -1,25 +1,34 @@
 {
   "packagePath": ".",
-  "scannedAt": "2026-08-16T00:00:00Z",
+  "scannedAt": "2026-10-13T00:00:00Z",
   "git": {
-    "sha": "6d02ef6b5ef6f3894118435d89f1263a0f66bd9e",
-    "tag": "0.1.0"
+    "sha": "55a7d542a46bed7ca41e148ff5dbaf3941312e9a",
+    "tag": null
   },
   "files": {
-    "Sources/NnArgumentParser/Exports.swift": "9a78fc1f2982cc67c611951389f26b00c0313bc65c86f02b86ead7addcb6b32c",
-    "Sources/NnArgumentParser/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
-    "Sources/NnArgumentParser/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
-    "Sources/NnArgumentParser/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
-    "Sources/NnArgumentParser/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
-    "Sources/NnArgumentParser/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
+    "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
+    "Sources/NnArgumentParser/Arguments/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a",
+    "Sources/NnArgumentParser/Exports/Exports.swift": "9a78fc1f2982cc67c611951389f26b00c0313bc65c86f02b86ead7addcb6b32c",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
+    "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
+    "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
+    "Sources/NnArgumentParser/Workflow/NnInspection.swift": "3d6eddef0f7aa0cf6f103267084cbdf4a3208f0f5d49aa7e7f9d269cc38f2ad6",
+    "Sources/NnArgumentParser/Workflow/NnPassthroughStages.swift": "2fece53ce78f80597bfb0a87ddc22d543985c19594879d59c70edc1bfcb46100",
+    "Sources/NnArgumentParser/Workflow/NnRequirement.swift": "07e5ff05dbb9232cde64a35df535e41f27798ebd499c49f5ac3e86399229e1f6",
+    "Sources/NnArgumentParser/Workflow/NnWorkflow.swift": "2cfbbf2f1a416d4c6490fe2ce1bfcca1e05effdb4b65fa56672de97942f895d0",
+    "Sources/NnArgumentParser/Workflow/NnWorkflowCommand.swift": "5cef90aee8c138878c12b54c2da10329d19f1bfa8183a415e05f679279d914f8",
     "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6",
-    "Sources/NnArgumentParser/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
-    "Sources/NnArgumentParser/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a"
+    "Sources/NnArgumentParserTesting/Workflow/MockCommandCollector.swift": "b54f6269bceaeb3a1730967f609a56ca6965f61556097b971bb00aed5bbaa985",
+    "Sources/NnArgumentParserTesting/Workflow/MockCommandInspector.swift": "42941ed702d8f6b4fa8684f4f5331eae6f2b59b30d19f619132568f141d4eafb",
+    "Sources/NnArgumentParserTesting/Workflow/MockCommandResolver.swift": "18d91f7aea4ed95f4f290deda67a19e205b0e8a0b6075053253ddfbf7798fa56",
+    "Sources/NnArgumentParserTesting/Workflow/MockWorkflowError.swift": "e996fa57899e206de0feaf84d6ea485552d8cb6b33fe8ccdff6616e5ebd79959"
   },
   "types": [
     {
       "name": "NnRootCommand",
-      "file": "Sources/NnArgumentParser/NnRootCommand.swift",
+      "file": "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift",
       "doc": "ApiReference.md",
       "anchor": "NnRootCommand",
       "conforms": [
@@ -28,7 +37,7 @@
     },
     {
       "name": "InteractionMode",
-      "file": "Sources/NnArgumentParser/InteractionMode.swift",
+      "file": "Sources/NnArgumentParser/Interactivity/InteractionMode.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractionMode",
       "conforms": [
@@ -38,7 +47,7 @@
     },
     {
       "name": "InteractivityOptions",
-      "file": "Sources/NnArgumentParser/InteractivityOptions.swift",
+      "file": "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift",
       "doc": "ApiReference.md",
       "anchor": "InteractivityOptions",
       "conforms": [
@@ -54,7 +63,7 @@
     },
     {
       "name": "CaseInsensitiveArgument",
-      "file": "Sources/NnArgumentParser/CaseInsensitiveArgument.swift",
+      "file": "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift",
       "doc": "ApiReference.md",
       "anchor": "CaseInsensitiveArgument",
       "conforms": [
@@ -65,7 +74,7 @@
     },
     {
       "name": "KeyValueArgument",
-      "file": "Sources/NnArgumentParser/KeyValueArgument.swift",
+      "file": "Sources/NnArgumentParser/Arguments/KeyValueArgument.swift",
       "doc": "ApiReference.md",
       "anchor": "KeyValueArgument",
       "conforms": [
@@ -73,6 +82,141 @@
         "Equatable",
         "Hashable",
         "Sendable"
+      ]
+    },
+    {
+      "name": "NnWorkflow",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnWorkflow",
+      "conforms": []
+    },
+    {
+      "name": "NnCommandInspector",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnCommandInspector",
+      "conforms": []
+    },
+    {
+      "name": "NnInspectionInterpreter",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnInspectionInterpreter",
+      "conforms": []
+    },
+    {
+      "name": "NnCommandCollector",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnCommandCollector",
+      "conforms": []
+    },
+    {
+      "name": "NnCollectionInterpreter",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnCollectionInterpreter",
+      "conforms": []
+    },
+    {
+      "name": "NnCommandResolver",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflow.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnCommandResolver",
+      "conforms": []
+    },
+    {
+      "name": "NnInspection",
+      "file": "Sources/NnArgumentParser/Workflow/NnInspection.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnInspection",
+      "conforms": [
+        "Sendable"
+      ]
+    },
+    {
+      "name": "NnRequirement",
+      "file": "Sources/NnArgumentParser/Workflow/NnRequirement.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnRequirement",
+      "conforms": [
+        "Sendable"
+      ]
+    },
+    {
+      "name": "NnWorkflowError",
+      "file": "Sources/NnArgumentParser/Workflow/NnRequirement.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnWorkflowError",
+      "conforms": [
+        "Error",
+        "Equatable",
+        "LocalizedError"
+      ]
+    },
+    {
+      "name": "NnPassthroughCollector",
+      "file": "Sources/NnArgumentParser/Workflow/NnPassthroughStages.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnPassthroughCollector",
+      "conforms": [
+        "NnCommandCollector"
+      ]
+    },
+    {
+      "name": "NnPassthroughCollectionInterpreter",
+      "file": "Sources/NnArgumentParser/Workflow/NnPassthroughStages.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnPassthroughCollector",
+      "conforms": [
+        "NnCollectionInterpreter"
+      ]
+    },
+    {
+      "name": "NnWorkflowCommand",
+      "file": "Sources/NnArgumentParser/Workflow/NnWorkflowCommand.swift",
+      "doc": "WorkflowReference.md",
+      "anchor": "NnWorkflowCommand",
+      "conforms": [
+        "ParsableCommand"
+      ]
+    },
+    {
+      "name": "MockCommandInspector",
+      "file": "Sources/NnArgumentParserTesting/Workflow/MockCommandInspector.swift",
+      "doc": "TestingReference.md",
+      "anchor": "MockCommandInspector",
+      "conforms": [
+        "NnCommandInspector"
+      ]
+    },
+    {
+      "name": "MockCommandCollector",
+      "file": "Sources/NnArgumentParserTesting/Workflow/MockCommandCollector.swift",
+      "doc": "TestingReference.md",
+      "anchor": "MockCommandInspector",
+      "conforms": [
+        "NnCommandCollector"
+      ]
+    },
+    {
+      "name": "MockCommandResolver",
+      "file": "Sources/NnArgumentParserTesting/Workflow/MockCommandResolver.swift",
+      "doc": "TestingReference.md",
+      "anchor": "MockCommandInspector",
+      "conforms": [
+        "NnCommandResolver"
+      ]
+    },
+    {
+      "name": "MockWorkflowError",
+      "file": "Sources/NnArgumentParserTesting/Workflow/MockWorkflowError.swift",
+      "doc": "TestingReference.md",
+      "anchor": "MockCommandInspector",
+      "conforms": [
+        "Error",
+        "Equatable"
       ]
     }
   ]
