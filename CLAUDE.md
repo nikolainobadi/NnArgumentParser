@@ -1,12 +1,14 @@
 # NnArgumentParser
 
 A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift-argument-parser)
-adding a dependency-injection seam for command-line tools, plus an interaction-mode system for
-suppressing prompts in automated contexts.
+adding a dependency-injection seam for command-line tools, an interaction-mode system for
+suppressing prompts in automated contexts, and composable command workflows.
 
-- `Sources/NnArgumentParser` — the library. `NnRootCommand`, `InteractionMode`,
-  `InteractivityOptions`, `CaseInsensitiveArgument`, `KeyValueArgument`.
-- `Sources/NnArgumentParserTesting` — `testRun`, for driving whole commands in tests.
+- `Sources/NnArgumentParser` — the library. `Arguments/`, `Exports/`, `Interactivity/`,
+  `RootCommand/`, and `Workflow/` organize its APIs; `NnWorkflow` composes inspect, interpret,
+  collect, interpret, and resolve stages, while `NnWorkflowCommand` adapts a workflow to a command.
+- `Sources/NnArgumentParserTesting` — `testRun` for driving whole commands in tests and workflow
+  stage mocks for exercising pipeline wiring.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
 
 Interactivity guidance appears in four places — the `InteractivityOptions` doc comment, `Skills/`,

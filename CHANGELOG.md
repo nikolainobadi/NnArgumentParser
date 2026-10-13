@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-13
+
+### Added
+
+- Add `NnWorkflow` and `NnWorkflowCommand` for structuring commands as typed inspect, interpret,
+  collect, interpret, and resolve stages, with `NnPassthroughCollector` and
+  `NnPassthroughCollectionInterpreter` for commands that need no input.
+- Add `NnInspection`, `NnRequirement`, and `NnWorkflowError` to represent findings and missing
+  input, ask only for unknown values, and report when a required answer is missing.
+- Add `MockCommandInspector`, `MockCommandCollector`, `MockCommandResolver`, and
+  `MockWorkflowError` to `NnArgumentParserTesting` for testing workflow stages.
+
 ### Changed
 
 - Correct the guidance for `InteractivityOptions`: declaring it once on the root command registers
@@ -39,5 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.2.0...0.3.0
 [0.1.0]: https://github.com/nikolainobadi/NnArgumentParser/releases/tag/0.1.0
