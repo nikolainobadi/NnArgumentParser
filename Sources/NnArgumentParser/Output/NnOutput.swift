@@ -13,12 +13,31 @@ import Foundation
 /// process's stdout, which lets command tests run in parallel.
 public enum NnOutput {
     public static func write(_ text: String) {
-        guard let buffer = NnStateScope.box?[NnOutputBuffer.storageKey] as? NnOutputBuffer else {
-            print(text)
-            return
-        }
+        let box = NnStateScope.box
 
-        buffer.append(text + "\n")
+        if let buffer = box?[NnOutputBuffer.storageKey] as? NnOutputBuffer {
+            buffer.append(text + "\n")
+        } else if let writer = box?[writerStorageKey] as? any NnOutputWriter {
+            writer.write(text)
+        } else {
+            print(text)
+        }
+    }
+}
+
+public extension NnOutput {
+    /// Routes this command scope's output through `writer`.
+    ///
+    /// - Important: Registering outside a command scope traps, matching ``InteractionMode/register(_:)``.
+    static func register(writer: any NnOutputWriter) {
+        NnStateScope.requiredBox(for: "NnOutput.register(writer:)")[writerStorageKey] = writer
+    }
+}
+
+// MARK: - Private Constants
+private extension NnOutput {
+    static var writerStorageKey: String {
+        return "NnArgumentParser.NnOutput.writer"
     }
 }
 

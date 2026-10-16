@@ -13,7 +13,8 @@ extension NnRootCommand {
     ///
     /// Use this method in tests to execute commands and verify their output. The method captures
     /// everything the command writes through ``NnOutput/write(_:)`` during the run; plain `print`
-    /// calls go to stdout and are not captured.
+    /// calls go to stdout and are not captured. A writer registered with
+    /// ``NnOutput/register(writer:)`` is ignored while the run captures output.
     ///
     /// - Parameters:
     ///   - contextFactory: The factory to inject for this test run, or `nil` to use the command's

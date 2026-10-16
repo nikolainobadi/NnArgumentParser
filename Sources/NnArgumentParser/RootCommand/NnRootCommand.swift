@@ -50,7 +50,6 @@ extension NnRootCommand {
     }
 }
 
-
 // MARK: - Entry Points
 extension NnRootCommand {
     /// Runs the root command inside a fresh command scope.
@@ -63,7 +62,6 @@ extension NnRootCommand {
         }
     }
 }
-
 
 // MARK: - Private Helpers
 private extension NnRootCommand {
