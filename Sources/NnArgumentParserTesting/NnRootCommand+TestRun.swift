@@ -8,8 +8,8 @@
 import Foundation
 import NnArgumentParser
 
-/// Lock for stdout capture - stdout is process-global so we serialize just this operation
-private let stdoutLock = NSLock()
+/// Gate for stdout capture - stdout is process-global so we serialize just this operation
+private let stdoutGate = AsyncStdoutGate()
 
 extension NnRootCommand {
     /// Runs the command in a test context and captures its standard output.
@@ -18,44 +18,48 @@ extension NnRootCommand {
     /// The method captures everything written to stdout during command execution.
     ///
     /// - Parameters:
-    ///   - contextFactory: An optional factory to inject for this test run.
-    ///     If `nil`, uses the command's ``defaultFactory``.
-    ///   - args: The command-line arguments to pass. Defaults to an empty array.
+    ///   - contextFactory: The factory to inject for this test run, or `nil` to use the command's
+    ///     ``defaultFactory``.
+    ///   - args: The command-line arguments to pass.
     ///   - interactionMode: The mode to apply for the duration of the run, applied after parsing
-    ///     so it takes precedence over any parsed interactivity flags. Defaults to
-    ///     ``InteractionMode/nonInteractive(assumeYes:)``. Pass `nil` to leave the decision to the
-    ///     parsed arguments and the environment, which is what a test exercising the flags wants.
+    ///     so it takes precedence over any parsed interactivity flags. Pass `nil` to leave the
+    ///     decision to the parsed arguments and the environment, which is what a test exercising
+    ///     the flags wants.
     /// - Returns: The captured standard output as a trimmed string.
     /// - Throws: Any error thrown by the command's `run()` method.
     ///
     /// ## Example
     ///
     /// ```swift
-    /// let output = try MyCommand.testRun(args: ["subcommand", "--flag"])
-    /// XCTAssertEqual(output, "Expected output")
+    /// let output = try await MyCommand.testRun(
+    ///     contextFactory: MockFactory(),
+    ///     args: ["subcommand", "--flag"],
+    ///     interactionMode: .nonInteractive(assumeYes: false)
+    /// )
+    /// #expect(output == "Expected output")
     /// ```
     ///
-    /// - Note: The non-interactive default exists so a test that reaches a prompt fails instead of
-    ///   blocking the suite on input that will never arrive. It only helps to the extent that the
-    ///   command's factory consults ``InteractionMode/current`` when building its dependencies.
+    /// - Note: Each run gets its own command scope, so the injected factory and mode never leak
+    ///   into another test. Pass a non-interactive mode so a test that reaches a prompt fails
+    ///   instead of blocking the suite on input that will never arrive.
     @discardableResult
     public static func testRun(
-        contextFactory: Factory? = nil,
-        args: [String]? = [],
-        interactionMode: InteractionMode? = .nonInteractive(assumeYes: false)
-    ) throws -> String {
-        return try NnStateScope.withFreshBox {
+        contextFactory: Factory?,
+        args: [String]?,
+        interactionMode: InteractionMode?
+    ) async throws -> String {
+        return try await NnStateScope.withFreshBox {
             if let contextFactory { self.contextFactory = contextFactory }
-            return try captureOutput(args: args, interactionMode: interactionMode)
+            return try await captureOutput(args: args, interactionMode: interactionMode)
         }
     }
 }
 
 // MARK: - Private Methods
 private extension NnRootCommand {
-    static func captureOutput(args: [String]?, interactionMode: InteractionMode?) throws -> String {
-        stdoutLock.lock()
-        defer { stdoutLock.unlock() }
+    static func captureOutput(args: [String]?, interactionMode: InteractionMode?) async throws -> String {
+        await stdoutGate.acquire()
+        defer { stdoutGate.release() }
 
         let pipe = Pipe()
         let readHandle = pipe.fileHandleForReading
@@ -65,13 +69,17 @@ private extension NnRootCommand {
         dup2(writeHandle.fileDescriptor, STDOUT_FILENO)
 
         do {
-            var command = try Self.parseAsRoot(args)
+            var command = try await parse(args: args)
 
             if let interactionMode {
                 InteractionMode.register(interactionMode)
             }
 
-            try command.run()
+            if var asyncCommand = command as? AsyncParsableCommand {
+                try await asyncCommand.run()
+            } else {
+                try command.run()
+            }
         } catch {
             fflush(stdout)
             dup2(originalStdout, STDOUT_FILENO)
@@ -90,5 +98,44 @@ private extension NnRootCommand {
         readHandle.closeFile()
 
         return String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func parse(args: [String]?) async throws -> ParsableCommand {
+        if let asyncRoot = Self.self as? any AsyncParsableCommand.Type {
+            return try await asyncRoot.asyncParseAsRoot(args)
+        }
+
+        return try parseAsRoot(args)
+    }
+}
+
+// MARK: - AsyncStdoutGate
+/// A lock whose waiters suspend rather than block, so it can be held across `await`.
+private final class AsyncStdoutGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var isHeld = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquire() async {
+        await withCheckedContinuation { continuation in
+            lock.withLock {
+                if isHeld {
+                    waiters.append(continuation)
+                } else {
+                    isHeld = true
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    func release() {
+        lock.withLock {
+            if waiters.isEmpty {
+                isHeld = false
+            } else {
+                waiters.removeFirst().resume()
+            }
+        }
     }
 }

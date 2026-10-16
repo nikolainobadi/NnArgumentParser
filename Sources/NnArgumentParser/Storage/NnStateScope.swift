@@ -38,7 +38,7 @@ package enum NnStateScope {
     /// real dependencies, or a registered mode lost — so the failure is made loud instead.
     package static func requiredBox(for operation: String) -> NnStateBox {
         guard let box else {
-            preconditionFailure("\(operation) outside a command scope. Run commands through their root command's main(), run tests through testRun, and don't read command state from Task.detached.")
+            preconditionFailure("\(operation) outside a command scope. Run commands through their root command's main(), run tests through testRun or withIsolatedState, and don't read command state from Task.detached.")
         }
 
         return box
@@ -47,5 +47,12 @@ package enum NnStateScope {
     /// Runs `body` inside a fresh, empty scope.
     package static func withFreshBox<T>(_ body: () throws -> T) rethrows -> T {
         return try $box.withValue(NnStateBox(), operation: body)
+    }
+
+    /// Runs `body` inside a fresh, empty scope.
+    package static func withFreshBox<T>(_ body: () async throws -> T) async rethrows -> T {
+        return try await $box.withValue(NnStateBox()) {
+            try await body()
+        }
     }
 }

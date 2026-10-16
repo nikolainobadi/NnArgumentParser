@@ -11,10 +11,10 @@ import NnArgumentParserTesting
 
 struct NnWorkflowTests {
     @Test
-    func `Stages run in order and each receives the previous stage's output`() throws {
+    func `Stages run in order and each receives the previous stage's output`() async throws {
         let (sut, mocks) = makeSUT(findings: "derived from facts", requirements: "needed", answers: "typed")
 
-        let results = try sut.run()
+        let results = try await sut.run()
 
         #expect(results == "results")
         #expect(mocks.inspector.inspectCallCount == 1)
@@ -27,7 +27,7 @@ struct NnWorkflowTests {
 // MARK: - Passthrough
 extension NnWorkflowTests {
     @Test
-    func `The passthrough collector and interpreter forward findings as the context`() throws {
+    func `The passthrough collector and interpreter forward findings as the context`() async throws {
         let inspector = MockCommandInspector(facts: "facts", throwError: false)
         let resolver = MockCommandResolver<String, String>(results: "results", throwError: false)
         let sut = PassthroughWorkflow(
@@ -38,7 +38,7 @@ extension NnWorkflowTests {
             resolver: resolver
         )
 
-        let results = try sut.run()
+        let results = try await sut.run()
 
         #expect(results == "results")
         #expect(resolver.capturedContexts == ["findings"])
@@ -49,31 +49,31 @@ extension NnWorkflowTests {
 // MARK: - Failure Propagation
 extension NnWorkflowTests {
     @Test
-    func `A failing inspector stops the run before the collector`() {
+    func `A failing inspector stops the run before the collector`() async {
         let (sut, mocks) = makeSUT(inspectorThrows: true)
 
-        #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run()
+        await #expect(throws: MockWorkflowError.stageFailed) {
+            try await sut.run()
         }
         #expect(mocks.collector.capturedRequirements.isEmpty)
     }
 
     @Test
-    func `A failing collector stops the run before the resolver`() {
+    func `A failing collector stops the run before the resolver`() async {
         let (sut, mocks) = makeSUT(collectorThrows: true)
 
-        #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run()
+        await #expect(throws: MockWorkflowError.stageFailed) {
+            try await sut.run()
         }
         #expect(mocks.resolver.capturedContexts.isEmpty)
     }
 
     @Test
-    func `A failing resolver surfaces its error`() {
+    func `A failing resolver surfaces its error`() async {
         let (sut, _) = makeSUT(resolverThrows: true)
 
-        #expect(throws: MockWorkflowError.stageFailed) {
-            try sut.run()
+        await #expect(throws: MockWorkflowError.stageFailed) {
+            try await sut.run()
         }
     }
 }
