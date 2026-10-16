@@ -53,7 +53,7 @@ extension NnRootCommand {
 
             if let contextFactory { self.contextFactory = contextFactory }
 
-            var command = try await parse(args: args)
+            var command = try await asyncParseAsRoot(args)
 
             if let interactionMode {
                 InteractionMode.register(interactionMode)
@@ -67,16 +67,5 @@ extension NnRootCommand {
 
             return buffer.contents.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-    }
-}
-
-// MARK: - Private Methods
-private extension NnRootCommand {
-    static func parse(args: [String]?) async throws -> ParsableCommand {
-        if let asyncRoot = Self.self as? any AsyncParsableCommand.Type {
-            return try await asyncRoot.asyncParseAsRoot(args)
-        }
-
-        return try parseAsRoot(args)
     }
 }

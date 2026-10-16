@@ -23,7 +23,7 @@ import ArgumentParser
 ///     static var defaultFactory: Factory { MyFactory() }
 /// }
 /// ```
-public protocol NnRootCommand: ParsableCommand {
+public protocol NnRootCommand: AsyncParsableCommand {
     /// The type responsible for creating dependencies used by this command and its subcommands.
     associatedtype Factory
 
@@ -53,19 +53,7 @@ extension NnRootCommand {
 
 // MARK: - Entry Points
 extension NnRootCommand {
-    /// Runs a synchronous root command inside a fresh command scope.
-    ///
-    /// `@main` selects this over ArgumentParser's own `main()`, so the scope that holds the
-    /// factory and interaction mode exists before parsing begins.
-    public static func main() {
-        NnStateScope.$box.withValue(NnStateBox()) {
-            Self.main(nil)
-        }
-    }
-}
-
-extension NnRootCommand where Self: AsyncParsableCommand {
-    /// Runs an asynchronous root command inside a fresh command scope.
+    /// Runs the root command inside a fresh command scope.
     ///
     /// `@main` selects this over ArgumentParser's own `main()`, so the scope that holds the
     /// factory and interaction mode exists before parsing begins and survives every `await`.

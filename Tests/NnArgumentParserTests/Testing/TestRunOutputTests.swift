@@ -36,7 +36,7 @@ struct TestRunOutputTests {
 
 
 // MARK: - Test Doubles
-private struct EchoRoot: NnRootCommand, AsyncParsableCommand {
+private struct EchoRoot: NnRootCommand {
     static let configuration = CommandConfiguration(subcommands: [SyncSubcommand.self])
     static var defaultFactory: String { "default" }
 
