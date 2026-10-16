@@ -7,6 +7,7 @@
 
 import Testing
 @testable import NnArgumentParser
+import NnArgumentParserTesting
 
 struct InteractionModeTests {
     @Test
@@ -98,7 +99,7 @@ extension InteractionModeTests {
     func `A registered mode is returned by subsequent reads`() {
         let mode = makeSUT(nonInteractive: true, assumeYes: true)
 
-        NnStateScope.withFreshBox {
+        withIsolatedState {
             InteractionMode.register(mode)
 
             #expect(InteractionMode.current == mode)
@@ -107,7 +108,7 @@ extension InteractionModeTests {
 
     @Test
     func `A registered mode ends with its scope`() {
-        NnStateScope.withFreshBox {
+        withIsolatedState {
             InteractionMode.register(makeSUT(nonInteractive: true))
         }
 
@@ -121,7 +122,7 @@ extension InteractionModeTests {
 
     @Test
     func `Registering from parsed flag values resolves before storing`() {
-        NnStateScope.withFreshBox {
+        withIsolatedState {
             InteractionMode.register(nonInteractive: true, assumeYes: true)
 
             #expect(InteractionMode.current == .nonInteractive(assumeYes: true))

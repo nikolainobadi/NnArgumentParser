@@ -73,7 +73,7 @@ private extension TestRunInteractionModeTests {
         @OptionGroup var interactivity: InteractivityOptions
 
         func run() throws {
-            print("\(InteractionMode.current)")
+            NnOutput.write("\(InteractionMode.current)")
         }
     }
 }

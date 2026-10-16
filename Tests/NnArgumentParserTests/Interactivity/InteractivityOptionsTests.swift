@@ -7,6 +7,7 @@
 
 import Testing
 @testable import NnArgumentParser
+import NnArgumentParserTesting
 
 struct InteractivityOptionsTests {
     @Test
@@ -59,7 +60,7 @@ extension InteractivityOptionsTests {
 // MARK: - SUT
 private extension InteractivityOptionsTests {
     func makeSUT(args: [String]) throws -> InteractionMode {
-        return try NnStateScope.withFreshBox {
+        return try withIsolatedState {
             _ = try TestRoot.parseAsRoot(args)
 
             return InteractionMode.current
@@ -85,7 +86,7 @@ private extension InteractivityOptionsTests {
 
     /// Registering from the root covers the whole chain, so subcommands declare nothing.
     func makeRootAdoptingSUT(args: [String]) throws -> InteractionMode {
-        return try NnStateScope.withFreshBox {
+        return try withIsolatedState {
             _ = try RootAdoptingRoot.parseAsRoot(args)
 
             return InteractionMode.current
