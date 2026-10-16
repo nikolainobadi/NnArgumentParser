@@ -96,19 +96,20 @@ extension InteractionModeTests {
 extension InteractionModeTests {
     @Test
     func `A registered mode is returned by subsequent reads`() {
-        defer { InteractionMode.reset() }
         let mode = makeSUT(nonInteractive: true, assumeYes: true)
 
-        InteractionMode.register(mode)
+        NnStateScope.withFreshBox {
+            InteractionMode.register(mode)
 
-        #expect(InteractionMode.current == mode)
+            #expect(InteractionMode.current == mode)
+        }
     }
 
     @Test
-    func `Clearing a registered mode restores the resolved default`() {
-        InteractionMode.register(makeSUT(nonInteractive: true))
-
-        InteractionMode.reset()
+    func `A registered mode ends with its scope`() {
+        NnStateScope.withFreshBox {
+            InteractionMode.register(makeSUT(nonInteractive: true))
+        }
 
         #expect(InteractionMode.current == InteractionMode.resolve())
     }
@@ -120,11 +121,11 @@ extension InteractionModeTests {
 
     @Test
     func `Registering from parsed flag values resolves before storing`() {
-        defer { InteractionMode.reset() }
+        NnStateScope.withFreshBox {
+            InteractionMode.register(nonInteractive: true, assumeYes: true)
 
-        InteractionMode.register(nonInteractive: true, assumeYes: true)
-
-        #expect(InteractionMode.current == .nonInteractive(assumeYes: true))
+            #expect(InteractionMode.current == .nonInteractive(assumeYes: true))
+        }
     }
 }
 

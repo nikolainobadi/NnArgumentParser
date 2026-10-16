@@ -44,10 +44,10 @@ extension NnRootCommand {
         args: [String]? = [],
         interactionMode: InteractionMode? = .nonInteractive(assumeYes: false)
     ) throws -> String {
-        defer { InteractionMode.reset() }
-
-        if let contextFactory { self.contextFactory = contextFactory }
-        return try captureOutput(args: args, interactionMode: interactionMode)
+        return try NnStateScope.withFreshBox {
+            if let contextFactory { self.contextFactory = contextFactory }
+            return try captureOutput(args: args, interactionMode: interactionMode)
+        }
     }
 }
 

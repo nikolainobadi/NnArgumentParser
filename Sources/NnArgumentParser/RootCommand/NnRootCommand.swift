@@ -11,8 +11,9 @@ import ArgumentParser
 /// A protocol for root commands that support dependency injection via a context factory.
 ///
 /// Conforming types provide a `Factory` type that creates dependencies needed by subcommands.
-/// The factory is stored in thread-local storage, enabling test-time injection without
-/// global mutable state.
+/// The factory is stored in the current command scope, enabling test-time injection without
+/// global mutable state. The root command's `main()` installs that scope in production, and
+/// `testRun` installs a fresh one per test run.
 ///
 /// ## Example
 ///
@@ -32,22 +33,53 @@ public protocol NnRootCommand: ParsableCommand {
 
 // MARK: - Helpers
 extension NnRootCommand {
-    /// The current context factory for this command type.
+    /// The factory injected into the current command scope, or ``defaultFactory`` when none was.
     ///
-    /// This property uses thread-local storage to enable dependency injection during testing.
-    /// In production, it returns ``defaultFactory``. In tests, you can set a custom factory
-    /// that will be used for the current thread only.
+    /// Production injects nothing; `testRun` injects its factory into that run's own scope. The
+    /// scope follows the command across `await`s and into task-group children and `Task { }`.
     ///
-    /// - Note: Each thread maintains its own factory instance, making concurrent test
-    ///   execution safe.
-    public static var contextFactory: Factory {
+    /// - Important: Reading this outside a command scope, including from `Task.detached`, traps
+    ///   rather than silently falling back to ``defaultFactory``.
+    public package(set) static var contextFactory: Factory {
         get {
-            let key = "\(Self.self).contextFactory"
-            return Thread.current.threadDictionary[key] as? Factory ?? defaultFactory
+            return NnStateScope.requiredBox(for: "contextFactory read")[contextFactoryKey] as? Factory ?? defaultFactory
         }
         set {
-            let key = "\(Self.self).contextFactory"
-            Thread.current.threadDictionary[key] = newValue
+            NnStateScope.requiredBox(for: "contextFactory set")[contextFactoryKey] = newValue
         }
+    }
+}
+
+
+// MARK: - Entry Points
+extension NnRootCommand {
+    /// Runs a synchronous root command inside a fresh command scope.
+    ///
+    /// `@main` selects this over ArgumentParser's own `main()`, so the scope that holds the
+    /// factory and interaction mode exists before parsing begins.
+    public static func main() {
+        NnStateScope.$box.withValue(NnStateBox()) {
+            Self.main(nil)
+        }
+    }
+}
+
+extension NnRootCommand where Self: AsyncParsableCommand {
+    /// Runs an asynchronous root command inside a fresh command scope.
+    ///
+    /// `@main` selects this over ArgumentParser's own `main()`, so the scope that holds the
+    /// factory and interaction mode exists before parsing begins and survives every `await`.
+    public static func main() async {
+        await NnStateScope.$box.withValue(NnStateBox()) {
+            await Self.main(nil)
+        }
+    }
+}
+
+
+// MARK: - Private Helpers
+private extension NnRootCommand {
+    static var contextFactoryKey: String {
+        return "\(Self.self).contextFactory"
     }
 }
