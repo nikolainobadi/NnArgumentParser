@@ -34,8 +34,47 @@ extension NnRootCommand {
 - Propagates parsing and command errors. Use an async `#expect(throws:)` closure for an async call.
 - Each run owns its factory, mode, and output buffer; parallel runs do not share captured output or require process-wide stdout redirection.
 - The scope is discarded on return or throw. There is no mode to reset afterward.
-- Installs no signal handlers. `NnInterrupt` cleanups registered during the run are discarded without being executed.
+- Installs no signal handlers. `NnInterrupt` cleanups registered during the run are discarded without being executed. To test them, use `testRunCapturingCleanups`.
 <!-- /type:testRun -->
+
+<!-- type:testRunCapturingCleanups -->
+## Method: testRunCapturingCleanups(contextFactory:args:interactionMode:)
+
+Runs a root command exactly like `testRun`, and also returns the interrupt cleanups it registered with `NnInterrupt.register(cleanup:)`.
+
+```swift
+extension NnRootCommand {
+    static func testRunCapturingCleanups(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> NnTestRunResult
+}
+
+public struct NnTestRunResult: Sendable {
+    public let output: String
+    public let interruptCleanups: [@Sendable () -> Void]
+}
+```
+
+### Returns / Behavior
+
+- Takes the same three required arguments as `testRun`, with the same meaning. Call with `try await`.
+- `output` is identical to what `testRun` returns: trimmed `NnOutput.write` output.
+- `interruptCleanups` are last-registered-first, the order production runs them on SIGINT/SIGTERM. Cleanups registered after an `await` are included.
+- **No interrupt is simulated and no cleanup runs on its own.** The test calls them, then asserts on its fakes.
+- If the command throws, the error propagates and no result is returned. Production runs cleanups only on a signal, never after an ordinary error, so there is nothing to test in that case.
+
+### Usage Example
+
+```swift
+@Test
+func `Interrupting a watch restores the terminal`() async throws {
+    let factory = MockDependencies()
+
+    let result = try await MyTool.testRunCapturingCleanups(contextFactory: factory, args: ["watch"], interactionMode: .nonInteractive(assumeYes: false))
+    result.interruptCleanups.forEach { $0() }
+
+    #expect(factory.terminal.wasRestored)
+}
+```
+<!-- /type:testRunCapturingCleanups -->
 
 <!-- type:MockCommandInspector -->
 ## Workflow stage mocks
@@ -133,6 +172,7 @@ func `Prompts when a terminal is available`() async throws {
 }
 ```
 
+<!-- type:withIsolatedState -->
 ## Isolated state without running a command
 
 `withIsolatedState(_:)` creates a fresh command scope for a synchronous or async closure. Use it when testing a factory accessor, registering a mode or output writer, or parsing a command with `InteractivityOptions` directly. `MyTool.withIsolatedState(contextFactory:_:)` also injects a factory; `contextFactory` cannot be assigned by package consumers.
@@ -152,6 +192,7 @@ func registeredModeIsVisible() {
 ```
 
 The scope follows `await` and is inherited by task-group children and `Task { }`, but not `Task.detached`. Reading `contextFactory` or registering state without a scope traps. `InteractionMode.current` alone can be read outside a scope and falls back to environment and terminal resolution. These helpers do not install output capture or signal handling.
+<!-- /type:withIsolatedState -->
 
 ## The command-testing pattern
 
@@ -196,6 +237,7 @@ Have your factory's test double vend those mocks, then inject the factory via `t
 - **Test through the root command type** — `testRun` is called on the `@main` `NnRootCommand`; it runs the whole parsed command tree, so subcommands are exercised through it.
 - **Pass `.nonInteractive(assumeYes: false)` explicitly** unless the test is *about* interactivity. This keeps prompt-aware dependencies from waiting for input.
 - **Pass `interactionMode: nil` to exercise the flags** — otherwise the explicit mode overrides whatever `--non-interactive` / `--yes` you put in `args`.
+- **Test interrupt cleanups with `testRunCapturingCleanups`** — call the returned cleanups yourself, then assert on your fakes. `testRun` discards them.
 - **Use `withIsolatedState` for direct state tests** — registration requires a scope, and the scope discards state automatically. `InteractionMode.reset()` no longer exists.
 - **Test workflow interpreters directly.** They're pure, so give them inputs and assert on outputs, without mocks.
 - **Test a workflow's wiring with the stage mocks.** Use real interpreters between a `MockCommandInspector` and a `MockCommandResolver`, then assert on `capturedContexts`.

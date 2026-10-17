@@ -292,7 +292,16 @@ For tests that register a mode or read command state directly, use `withIsolated
 helpers support sync and async bodies.
 
 `testRun` captures `NnOutput` writes even when the command registers a custom writer. It installs
-no signal handlers; registered interrupt cleanups are discarded without running.
+no signal handlers; registered interrupt cleanups are discarded without running. To test a cleanup,
+use `testRunCapturingCleanups`, which takes the same arguments and returns an `NnTestRunResult`
+holding the output and the registered cleanups, last registered first. None has run; call them,
+then assert on your fakes:
+
+```swift
+let result = try await MyTool.testRunCapturingCleanups(contextFactory: factory, args: ["watch"], interactionMode: .nonInteractive(assumeYes: false))
+result.interruptCleanups.forEach { $0() }
+#expect(factory.terminal.wasRestored)
+```
 
 ### Mocking infrastructure
 
