@@ -2,8 +2,8 @@
   "packagePath": ".",
   "scannedAt": "2026-10-17T00:00:00Z",
   "git": {
-    "sha": "d0b78976946e350929d3c505983d16e4219499cb",
-    "tag": "1.0.0"
+    "sha": "f9ee4a71121d8ce998025e13191ac160a612b34f",
+    "tag": "1.0.1"
   },
   "files": {
     "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
@@ -27,13 +27,15 @@
     "Sources/NnArgumentParser/Workflow/NnRequirement.swift": "07e5ff05dbb9232cde64a35df535e41f27798ebd499c49f5ac3e86399229e1f6",
     "Sources/NnArgumentParser/Workflow/NnWorkflow.swift": "d36e8ba75fb9e6d380ad7ecf93400b0e4ba5356384fc0fc90c263608f49012eb",
     "Sources/NnArgumentParser/Workflow/NnWorkflowCommand.swift": "8c1e2e8ca94d2417f7fb491c66b48d9d6e9e255f77088ca97bd1e07004436e99",
+    "Sources/NnArgumentParserTesting/Exports/Exports.swift": "db4b3e397eec10f4b5094a5c81cedd1b866e8e0d6e46d4ce87b1b7f3054bc30e",
     "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "ba2443e2a5466b4fec0525ddfc57aa2b4a20707844a3e8416407179f7513bd22",
     "Sources/NnArgumentParserTesting/NnTestRunResult.swift": "8a31bc95247b5c42416df055e1a605a62b06ff7640fde669b63ff1f9f33e9a55",
     "Sources/NnArgumentParserTesting/WithIsolatedState.swift": "e0fcd7bdcac8f0227a70d7c92154c89472f9ba3f13d0ecfb9bddaaec998c9fed",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandCollector.swift": "b54f6269bceaeb3a1730967f609a56ca6965f61556097b971bb00aed5bbaa985",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandInspector.swift": "42941ed702d8f6b4fa8684f4f5331eae6f2b59b30d19f619132568f141d4eafb",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandResolver.swift": "18d91f7aea4ed95f4f290deda67a19e205b0e8a0b6075053253ddfbf7798fa56",
-    "Sources/NnArgumentParserTesting/Workflow/MockWorkflowError.swift": "e996fa57899e206de0feaf84d6ea485552d8cb6b33fe8ccdff6616e5ebd79959"
+    "Sources/NnArgumentParserTesting/Workflow/MockWorkflowError.swift": "e996fa57899e206de0feaf84d6ea485552d8cb6b33fe8ccdff6616e5ebd79959",
+    "Sources/NnArgumentParserTesting/Workflow/NnRequirement+Testing.swift": "9b1935cbdc70d39efea82164ef5a0666ee7ff27bbe4450907f0f3ab17c5bebd4"
   },
   "types": [
     {
@@ -273,6 +275,20 @@
       "file": "Sources/NnArgumentParserTesting/WithIsolatedState.swift",
       "doc": "TestingReference.md",
       "anchor": "withIsolatedState",
+      "conforms": []
+    },
+    {
+      "name": "knownValue",
+      "file": "Sources/NnArgumentParserTesting/Workflow/NnRequirement+Testing.swift",
+      "doc": "TestingReference.md",
+      "anchor": "knownValue",
+      "conforms": []
+    },
+    {
+      "name": "unknownInfo",
+      "file": "Sources/NnArgumentParserTesting/Workflow/NnRequirement+Testing.swift",
+      "doc": "TestingReference.md",
+      "anchor": "knownValue",
       "conforms": []
     }
   ]

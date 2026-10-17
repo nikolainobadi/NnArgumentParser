@@ -2,7 +2,7 @@
 
 Utilities from the `NnArgumentParserTesting` module for driving whole commands in tests.
 
-**Import:** `import NnArgumentParserTesting`
+**Import:** `import NnArgumentParserTesting`. It re-exports `NnArgumentParser` (and through it ArgumentParser), so a test file needs no other NnArgumentParser import. Requires NnArgumentParser 1.1.0 or later; earlier versions also need `import NnArgumentParser`.
 
 ---
 
@@ -152,6 +152,48 @@ private struct TestWorkflow: NnWorkflow {
 
 To stop a run at a given stage, pass `throwError: true` and assert with `await #expect(throws: MockWorkflowError.stageFailed) { try await sut.run() }`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
 <!-- /type:MockCommandInspector -->
+
+<!-- type:knownValue -->
+## Asserting on requirements
+
+Test accessors that pull the case out of an `NnRequirement`, for asserting on what an inspection interpreter decided. Requires NnArgumentParser 1.1.0 or later.
+
+```swift
+public extension NnRequirement {
+    var knownValue: Value? { get }   // the value when .known, else nil
+    var unknownInfo: Info? { get }   // the info when .unknown, else nil
+}
+```
+
+`NnRequirement` is deliberately **not `Equatable`**, so `#expect(requirement == .known(.write))` doesn't compile:
+
+- The common `NnRequirement<X, Void>` shape could never conform, because `Void` can't be `Equatable`.
+- Info types often hold values that aren't `Equatable`. Making production models `Equatable` only for tests isn't worth it.
+- Production code never compares requirements. It only uses `ask(_:)` and `resolve(answer:)`.
+- Tests usually check one field of the info, not the whole requirement.
+
+Unwrap the case you expect with `#require`, then assert on the field you care about. The test fails at the `#require` if the requirement is in the other case.
+
+```swift
+@Test
+func `An omitted version is asked for with the latest tag`() throws {
+    let inspection = try PublishInspectionInterpreter(requestedVersion: nil).interpret(facts: PublishFacts(latestTag: "1.2.0"))
+    let unknownVersion = try #require(inspection.requirements.version.unknownInfo)
+
+    #expect(unknownVersion.latestTag == "1.2.0")
+}
+
+@Test
+func `A passed version is known`() throws {
+    let inspection = try PublishInspectionInterpreter(requestedVersion: "1.3.0").interpret(facts: PublishFacts(latestTag: "1.2.0"))
+    let version = try #require(inspection.requirements.version.knownValue)
+
+    #expect(version == .exact("1.3.0"))
+}
+```
+
+For `Void` info, check whether the requirement is unknown with `#expect(requirement.unknownInfo != nil)`.
+<!-- /type:knownValue -->
 
 ## Choose the test interaction mode explicitly
 
