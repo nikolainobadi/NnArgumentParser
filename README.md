@@ -44,7 +44,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.0.1")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.1.0")
 ```
 
 Then add the product to your target:
@@ -247,6 +247,10 @@ work, and `--non-interactive --yes` disables prompting entirely with confirmatio
 > that a root declaration also makes every subcommand accept the flags, whether or not it prompts.
 
 ## Testing
+
+`import NnArgumentParserTesting` also re-exports `NnArgumentParser`. For workflow tests,
+it adds `knownValue` and `unknownInfo` accessors to `NnRequirement`: each returns the
+associated value for its matching case, or `nil` for the other case.
 
 `testRun` asynchronously parses arguments against the root command, runs the resolved command,
 and returns trimmed output written through `NnOutput.write(_:)`. Plain `print` calls are not

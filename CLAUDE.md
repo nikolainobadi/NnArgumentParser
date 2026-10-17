@@ -104,4 +104,7 @@ its own.
   with the same three required arguments. It returns `NnTestRunResult` with captured `output`
   and `interruptCleanups` in reverse registration order. It installs no signal handlers and runs
   no cleanups; call the returned closures explicitly, then assert on the test doubles.
+- `NnArgumentParserTesting` adds `knownValue` and `unknownInfo` accessors to `NnRequirement`.
+  Each returns the matching case's payload, or `nil` for the other case. For requirement assertions,
+  unwrap the expected payload with `#require`, then assert on its value or fields.
 - Tests use Swift Testing (`import Testing`), with backtick-quoted descriptive test names.

@@ -117,7 +117,6 @@ There are **no interpreter mocks.** Interpreters are pure functions of their inp
 
 ```swift
 import Testing
-import NnArgumentParser
 import NnArgumentParserTesting
 
 struct PublishWorkflowTests {
@@ -224,7 +223,6 @@ func `Prompts when a terminal is available`() async throws {
 
 ```swift
 import Testing
-import NnArgumentParser
 import NnArgumentParserTesting
 
 @Test

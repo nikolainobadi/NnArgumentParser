@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-17
+
+### Added
+
+- Add `NnRequirement.knownValue` and `NnRequirement.unknownInfo` in `NnArgumentParserTesting`
+  for asserting on requirement payloads. Each returns the matching case's payload or `nil`
+  for the other case, including support for `Void` info.
+- Re-export `NnArgumentParser` from `NnArgumentParserTesting`, so test files can access both
+  modules' public APIs with only `import NnArgumentParserTesting`.
+
 ## [1.0.1] - 2026-10-17
 
 ### Added
@@ -100,7 +110,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.1...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...1.0.0
 [0.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.2.0...0.3.0
