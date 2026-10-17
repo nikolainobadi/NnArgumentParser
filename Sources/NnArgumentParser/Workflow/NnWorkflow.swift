@@ -32,13 +32,13 @@ public protocol NnWorkflow {
 
 // MARK: - Run
 public extension NnWorkflow {
-    func run() throws -> ResolverType.Results {
-        let facts = try inspector.inspect()
+    func run() async throws -> ResolverType.Results {
+        let facts = try await inspector.inspect()
         let inspection = try inspectionInterpreter.interpret(facts: facts)
         let answers = try collector.collect(requirements: inspection.requirements)
         let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
-        return try resolver.resolve(context: context)
+        return try await resolver.resolve(context: context)
     }
 }
 
@@ -46,7 +46,7 @@ public extension NnWorkflow {
 public protocol NnCommandInspector {
     associatedtype Facts: Sendable
 
-    func inspect() throws -> Facts
+    func inspect() async throws -> Facts
 }
 
 public protocol NnInspectionInterpreter {
@@ -77,5 +77,5 @@ public protocol NnCommandResolver {
     associatedtype Context: Sendable
     associatedtype Results: Sendable
 
-    func resolve(context: Context) throws -> Results
+    func resolve(context: Context) async throws -> Results
 }

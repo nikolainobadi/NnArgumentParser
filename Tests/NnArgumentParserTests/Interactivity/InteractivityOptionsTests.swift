@@ -7,12 +7,11 @@
 
 import Testing
 @testable import NnArgumentParser
+import NnArgumentParserTesting
 
 struct InteractivityOptionsTests {
     @Test
     func `Disabling prompts on a subcommand takes effect without the root command running`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeSUT(args: ["prompting", "--non-interactive"]) == .nonInteractive(assumeYes: false))
     }
 }
@@ -22,15 +21,11 @@ struct InteractivityOptionsTests {
 extension InteractivityOptionsTests {
     @Test
     func `Requesting assumed confirmations alongside disabled prompts is registered`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeSUT(args: ["prompting", "--non-interactive", "--yes"]) == .nonInteractive(assumeYes: true))
     }
 
     @Test
     func `Omitting both flags leaves the decision to the environment and terminal`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeSUT(args: ["prompting"]) == InteractionMode.resolve())
     }
 }
@@ -40,8 +35,6 @@ extension InteractivityOptionsTests {
 extension InteractivityOptionsTests {
     @Test
     func `A command that never adopts the flags still resolves from the environment and terminal`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeSUT(args: ["plain"]) == InteractionMode.resolve())
     }
 
@@ -54,15 +47,11 @@ extension InteractivityOptionsTests {
 
     @Test
     func `A subcommand that adopts nothing still inherits flags declared on the root`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeRootAdoptingSUT(args: ["sub", "--non-interactive"]) == .nonInteractive(assumeYes: false))
     }
 
     @Test
     func `Flags declared on the root are accepted ahead of the subcommand name`() throws {
-        defer { InteractionMode.reset() }
-
         #expect(try makeRootAdoptingSUT(args: ["--non-interactive", "sub"]) == .nonInteractive(assumeYes: false))
     }
 }
@@ -71,10 +60,11 @@ extension InteractivityOptionsTests {
 // MARK: - SUT
 private extension InteractivityOptionsTests {
     func makeSUT(args: [String]) throws -> InteractionMode {
-        InteractionMode.reset()
-        _ = try TestRoot.parseAsRoot(args)
+        return try withIsolatedState {
+            _ = try TestRoot.parseAsRoot(args)
 
-        return InteractionMode.current
+            return InteractionMode.current
+        }
     }
 
     struct TestRoot: ParsableCommand {
@@ -96,10 +86,11 @@ private extension InteractivityOptionsTests {
 
     /// Registering from the root covers the whole chain, so subcommands declare nothing.
     func makeRootAdoptingSUT(args: [String]) throws -> InteractionMode {
-        InteractionMode.reset()
-        _ = try RootAdoptingRoot.parseAsRoot(args)
+        return try withIsolatedState {
+            _ = try RootAdoptingRoot.parseAsRoot(args)
 
-        return InteractionMode.current
+            return InteractionMode.current
+        }
     }
 
     struct RootAdoptingRoot: ParsableCommand {

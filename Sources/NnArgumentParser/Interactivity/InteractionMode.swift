@@ -29,15 +29,9 @@
 ///   prompt at all still needs to know whether an unanswered confirmation means "yes" or "no".
 public enum InteractionMode: Sendable, Equatable {
     /// Prompting is allowed; a person is expected to answer.
-    ///
-    /// - Parameter assumeYes: Whether confirmation prompts should be treated as approved.
-    ///   When `true`, confirmations are skipped even though other prompts are still shown.
     case interactive(assumeYes: Bool)
 
     /// Prompting is not allowed.
-    ///
-    /// - Parameter assumeYes: Whether confirmation prompts should be treated as approved.
-    ///   When `false`, a required confirmation fails rather than proceeding.
     case nonInteractive(assumeYes: Bool)
 }
 

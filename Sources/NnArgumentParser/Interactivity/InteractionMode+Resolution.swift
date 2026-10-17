@@ -49,7 +49,7 @@ public extension InteractionMode {
         return shouldSuppressPrompts ? .nonInteractive(assumeYes: assumeYes) : .interactive(assumeYes: assumeYes)
     }
 
-    /// Resolves the mode from parsed flag values and registers it for the current thread.
+    /// Resolves the mode from parsed flag values and registers it for the current command scope.
     ///
     /// This is the bridge between argument parsing and ``current``. Parsed flags are only one of
     /// the inputs — the environment and terminal checks still apply when the flag is absent.

@@ -7,7 +7,7 @@
 
 import ArgumentParser
 
-public protocol NnWorkflowCommand: ParsableCommand {
+public protocol NnWorkflowCommand: AsyncParsableCommand {
     associatedtype Workflow: NnWorkflow
 
     func makeWorkflow() throws -> Workflow
@@ -15,8 +15,12 @@ public protocol NnWorkflowCommand: ParsableCommand {
 }
 
 public extension NnWorkflowCommand {
-    mutating func run() throws {
-        let results = try makeWorkflow().run()
+    mutating func run() async throws {
+        let workflow = try makeWorkflow()
+        let results = try await withTaskExecutorPreference(NnBlockingTolerantExecutor.shared) {
+            try await workflow.run()
+        }
+
         try handleResults(results)
     }
 }
