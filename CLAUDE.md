@@ -80,6 +80,8 @@ its own.
 - Swift 6.2, macOS 15+. Pull-request CI uses Xcode 26.3 on macOS 15 and runs `swift test`.
 - `@_exported import ArgumentParser` in `Exports.swift` — consumers get the full ArgumentParser
   surface from `import NnArgumentParser` and should never import ArgumentParser separately.
+  `NnArgumentParserTesting` likewise does `@_exported import NnArgumentParser`, so test files need
+  only `import NnArgumentParserTesting`.
 - `NnRootCommand` and `NnWorkflowCommand` conform to `AsyncParsableCommand`. Workflow `run()`,
   inspector `inspect()`, and resolver `resolve(context:)` are async; collection and interpretation
   remain synchronous. `NnWorkflowCommand` runs the workflow with a dispatch-backed task executor

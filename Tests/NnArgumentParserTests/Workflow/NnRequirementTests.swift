@@ -7,6 +7,7 @@
 
 import Testing
 import NnArgumentParser
+import NnArgumentParserTesting
 
 struct NnRequirementTests {
     @Test
@@ -59,6 +60,41 @@ extension NnRequirementTests {
     @Test
     func `A missing answer describes itself`() {
         #expect(NnWorkflowError.missingAnswer.errorDescription == "A required value was neither known nor answered.")
+    }
+}
+
+
+// MARK: - Test Accessors
+extension NnRequirementTests {
+    @Test
+    func `A known requirement exposes its value`() throws {
+        let value = try #require(makeSUT(known: "configured").knownValue)
+
+        #expect(value == "configured")
+    }
+
+    @Test
+    func `A known requirement exposes no info`() {
+        #expect(makeSUT(known: "configured").unknownInfo == nil)
+    }
+
+    @Test
+    func `An unknown requirement exposes its info`() throws {
+        let info = try #require(makeSUT(unknown: 7).unknownInfo)
+
+        #expect(info == 7)
+    }
+
+    @Test
+    func `An unknown requirement exposes no value`() {
+        #expect(makeSUT(unknown: 7).knownValue == nil)
+    }
+
+    @Test
+    func `An unknown requirement with Void info exposes non-nil info`() {
+        let requirement = NnRequirement<String, Void>.unknown(())
+
+        #expect(requirement.unknownInfo != nil)
     }
 }
 
