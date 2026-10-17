@@ -2,7 +2,8 @@
   "targets" : [
     {
       "buildAndTestCommands" : [
-        "swift build"
+        "swift build --build-tests",
+        "swift test --skip-build"
       ],
       "name" : "NnArgumentParser",
       "path" : ".",
