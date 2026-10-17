@@ -52,13 +52,46 @@ extension NnRootCommand {
 
 // MARK: - Entry Points
 extension NnRootCommand {
-    /// Runs the root command inside a fresh command scope.
+    /// Runs the root command inside a fresh command scope, with interrupt handling installed.
     ///
     /// `@main` selects this over ArgumentParser's own `main()`, so the scope that holds the
     /// factory and interaction mode exists before parsing begins and survives every `await`.
+    ///
+    /// It parses and runs the command the way ArgumentParser's `main` does. Once SIGINT or SIGTERM
+    /// has arrived, though, it neither prints the command's error nor exits; the interrupt's
+    /// cleanups end the process instead. See ``NnInterrupt``.
     public static func main() async {
-        await NnStateScope.$box.withValue(NnStateBox()) {
-            await Self.main(nil)
+        await main(arguments: nil)
+    }
+}
+
+extension NnRootCommand {
+    /// ``main()`` with explicit arguments, so tests can drive it in an exit test.
+    ///
+    /// - Parameter arguments: The arguments to parse, or `nil` for the process's own.
+    static func main(arguments: [String]?) async {
+        let box = NnStateBox()
+
+        await NnStateScope.$box.withValue(box) {
+            let coordinator = NnInterruptCoordinator(
+                box: box,
+                isInterrupting: { NnInterruptSignal.received != 0 },
+                terminate: { NnInterruptSignal.reraise($0) },
+                writeError: { fputs($0, stderr) }
+            )
+            let installation = coordinator.install()
+            let outcome = await parseAndRun(arguments: arguments)
+
+            switch NnRunCompletion(outcome: outcome, isInterrupting: coordinator.isInterrupting) {
+            case .finish:
+                break
+            case .exit(let error):
+                Self.exit(withError: error)
+            case .park:
+                await withUnsafeContinuation { (_: UnsafeContinuation<Void, Never>) in }
+            }
+
+            withExtendedLifetime(installation) { }
         }
     }
 }
@@ -67,5 +100,23 @@ extension NnRootCommand {
 private extension NnRootCommand {
     static var contextFactoryKey: String {
         return "\(Self.self).contextFactory"
+    }
+
+    /// Parses and runs the command as ArgumentParser's `main` does, returning the outcome instead
+    /// of exiting on error.
+    static func parseAndRun(arguments: [String]?) async -> Result<Void, any Error> {
+        do {
+            var command = try await asyncParseAsRoot(arguments)
+
+            if var asyncCommand = command as? AsyncParsableCommand {
+                try await asyncCommand.run()
+            } else {
+                try command.run()
+            }
+
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
     }
 }

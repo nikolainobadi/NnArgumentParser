@@ -42,6 +42,10 @@ extension NnRootCommand {
     ///   mode, and output never leak into another test, and runs can execute in parallel. Pass a
     ///   non-interactive mode so a test that reaches a prompt fails instead of blocking the suite
     ///   on input that will never arrive.
+    ///
+    /// - Note: A run installs no interrupt handling and never touches the process's signal handlers.
+    ///   Cleanups the command registers with ``NnInterrupt/register(cleanup:)`` are kept with the run
+    ///   and discarded with it, never run.
     @discardableResult
     public static func testRun(
         contextFactory: Factory?,

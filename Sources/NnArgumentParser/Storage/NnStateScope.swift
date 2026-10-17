@@ -21,6 +21,15 @@ package final class NnStateBox: @unchecked Sendable {
         get { lock.withLock { values[key] } }
         set { lock.withLock { values[key] = newValue } }
     }
+
+    /// Appends `element` to the array stored under `key` in one locked step, so concurrent appends
+    /// are never lost.
+    package func append<Element>(_ element: Element, to key: String) {
+        lock.withLock {
+            let existing = values[key] as? [Element] ?? []
+            values[key] = existing + [element]
+        }
+    }
 }
 
 /// Binds an ``NnStateBox`` to the current task.

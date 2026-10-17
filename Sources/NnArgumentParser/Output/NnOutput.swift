@@ -11,9 +11,16 @@ import Foundation
 ///
 /// Use this instead of `print` so `testRun` can capture output per run without redirecting the
 /// process's stdout, which lets command tests run in parallel.
+///
+/// Once an interrupt has started, writes are dropped, so a command still running cannot write into
+/// a display its cleanups are tearing down. See ``NnInterrupt``.
 public enum NnOutput {
     public static func write(_ text: String) {
         let box = NnStateScope.box
+
+        if NnInterruptCoordinator.isInterrupting(in: box) {
+            return
+        }
 
         if let buffer = box?[NnOutputBuffer.storageKey] as? NnOutputBuffer {
             buffer.append(text + "\n")
