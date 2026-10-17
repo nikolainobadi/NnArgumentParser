@@ -40,7 +40,7 @@ extension NnRootCommand {
 <!-- type:testRunCapturingCleanups -->
 ## Method: testRunCapturingCleanups(contextFactory:args:interactionMode:)
 
-Runs a root command exactly like `testRun`, and also returns the interrupt cleanups it registered with `NnInterrupt.register(cleanup:)`.
+Runs a root command exactly like `testRun`, and also returns the interrupt cleanups it registered with `NnInterrupt.register(cleanup:)`. Requires NnArgumentParser 1.0.1 or later.
 
 ```swift
 extension NnRootCommand {
@@ -59,9 +59,12 @@ public struct NnTestRunResult: Sendable {
 - `output` is identical to what `testRun` returns: trimmed `NnOutput.write` output.
 - `interruptCleanups` are last-registered-first, the order production runs them on SIGINT/SIGTERM. Cleanups registered after an `await` are included.
 - **No interrupt is simulated and no cleanup runs on its own.** The test calls them, then asserts on its fakes.
-- If the command throws, the error propagates and no result is returned. Production runs cleanups only on a signal, never after an ordinary error, so there is nothing to test in that case.
+- The selected command must finish successfully before the result is available. If parsing or running throws, the error propagates and no result or cleanups are returned.
+- Calling the returned closures does not restore the run's command scope. Capture the dependencies needed for teardown when registering the cleanup; reading `contextFactory` inside the cleanup traps when the caller has no scope. Cleanup output is not added to the returned `output` string.
 
 ### Usage Example
+
+This fragment assumes your `MyTool` watch command registers terminal restoration and your injected `MockDependencies` lets the command finish without waiting indefinitely. The test exercises the registered teardown after the command returns.
 
 ```swift
 @Test

@@ -98,4 +98,8 @@ its own.
 - `NnInterrupt.register(cleanup:)` registers cleanup in the command scope. Production runs cleanups
   in reverse registration order on SIGINT or SIGTERM and suppresses subsequent `NnOutput` writes.
   `testRun` installs no signal handlers and discards registered cleanups without running them.
+  To test cleanups, use async `testRunCapturingCleanups(contextFactory:args:interactionMode:)`
+  with the same three required arguments. It returns `NnTestRunResult` with captured `output`
+  and `interruptCleanups` in reverse registration order. It installs no signal handlers and runs
+  no cleanups; call the returned closures explicitly, then assert on the test doubles.
 - Tests use Swift Testing (`import Testing`), with backtick-quoted descriptive test names.

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-17
+
+### Added
+
+- Add `NnRootCommand.testRunCapturingCleanups(contextFactory:args:interactionMode:)` in
+  `NnArgumentParserTesting`, returning an `NnTestRunResult` with captured output and registered
+  interrupt cleanups in reverse registration order. Invoke the returned `interruptCleanups` to
+  test command teardown; the helper installs no signal handlers and does not run cleanups itself.
+
 ## [1.0.0] - 2026-10-17
 
 ### Added
@@ -91,7 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.1...HEAD
+[1.0.1]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...1.0.0
 [0.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.2.0...0.3.0
 [0.1.0]: https://github.com/nikolainobadi/NnArgumentParser/releases/tag/0.1.0
