@@ -1,6 +1,6 @@
 # NnArgumentParser
 
-![Swift 6.0](https://img.shields.io/badge/Swift-6.0-orange.svg)
+![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blueviolet.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)
 
@@ -14,9 +14,9 @@ dependency — a network client, a file system, a prompt — because there's no 
 it through. The usual workaround is a global `var` that tests reassign, which breaks the moment
 tests run in parallel.
 
-NnArgumentParser adds one seam: a **factory**, resolved through thread-local storage. Production
-reads the default; a test sets its own for the current thread only. Nothing is shared between
-threads, so parallel tests don't interfere.
+NnArgumentParser adds one seam: a **factory**, resolved through a task-local command scope. Production
+reads the default; each test run injects its own. The scope follows the command across `await`s
+and into child tasks, so parallel test runs keep their state separate.
 
 It also handles the other thing CLIs get wrong — prompting for input when nobody is there to
 answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
@@ -24,25 +24,27 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 ## Features
 
 - **Dependency injection** — `NnRootCommand` gives commands an injectable factory with no global state
-- **Parallel-safe** — thread-local storage, so concurrent tests can't clobber each other
-- **End-to-end testing** — `testRun` parses arguments, runs the command, and returns its stdout
+- **Parallel-safe** — task-local command scopes keep each run's factory, interaction mode, and output separate
+- **End-to-end testing** — async `testRun` parses arguments, runs sync or async commands, and captures `NnOutput` writes
+- **Custom output** — `NnOutput.register(writer:)` routes output through an app-provided `NnOutputWriter`
+- **Interrupt cleanup** — `NnInterrupt.register(cleanup:)` registers teardown for SIGINT and SIGTERM
 - **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
 - **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
-- **Composable command workflows** — `NnWorkflow` runs typed inspection, collection, interpretation, and resolution stages in order
+- **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and resolution; `NnWorkflowCommand` provides async command execution
 - **ArgumentParser re-export** — one import gets you both
 
 ## Requirements
 
 - macOS 15+
-- Swift 6.0+
+- Swift 6.2+
 
 ## Installation
 
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "0.3.0")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.0.0")
 ```
 
 Then add the product to your target:
@@ -106,7 +108,7 @@ struct Greet: ParsableCommand {
     @Argument var name: String
 
     func run() throws {
-        print(MyTool.makeGreeter().greeting(for: name))
+        NnOutput.write(MyTool.makeGreeter().greeting(for: name))
     }
 }
 ```
@@ -121,14 +123,16 @@ accessor on the root type is how the dependency gets there.
 | | What it is | Who uses it |
 |---|---|---|
 | `defaultFactory` | You implement it. The real dependencies. | Production |
-| `contextFactory` | Provided for you. Returns the thread-local factory if one was set, otherwise `defaultFactory`. | Everything reads this |
+| `contextFactory` | Provided for you. Returns the factory injected into the current command scope, otherwise `defaultFactory`. | Everything reads this |
 
-Always read `contextFactory`. Never set it in production code — `testRun` sets it, and that's the
-only thing that should.
+Always read `contextFactory`; its setter is package-only. The root command's `main()` creates the
+production scope, and `testRun` creates a fresh scope for each test. Reading `contextFactory` outside
+a scope, including from `Task.detached`, traps. Task-group children and `Task { }` inherit the scope.
 
 ### Conform only the root command
 
-Subcommands stay plain `ParsableCommand`s. One conformance, at the `@main` type, is all you need.
+`NnRootCommand` inherits `AsyncParsableCommand`. Subcommands can use `ParsableCommand` for
+synchronous work or `AsyncParsableCommand` for async work. Only the root needs `NnRootCommand`.
 
 ### Keep the factory an infrastructure seam
 
@@ -244,18 +248,16 @@ work, and `--non-interactive --yes` disables prompting entirely with confirmatio
 
 ## Testing
 
-`testRun` parses arguments against the root command, runs the resolved command, and returns its
-trimmed stdout:
+`testRun` asynchronously parses arguments against the root command, runs the resolved command,
+and returns trimmed output written through `NnOutput.write(_:)`. Plain `print` calls are not
+captured. All three arguments are required; pass `nil` for `contextFactory` to use the default factory:
 
 ```swift
 import Testing
 import NnArgumentParserTesting
 
-@Test func greetsTheProvidedName() throws {
-    let output = try MyTool.testRun(
-        contextFactory: MockDependencies(),
-        args: ["greet", "Ada"]
-    )
+@Test func greetsTheProvidedName() async throws {
+    let output = try await MyTool.testRun(contextFactory: MockDependencies(), args: ["greet", "Ada"], interactionMode: .nonInteractive(assumeYes: false))
 
     #expect(output == "Hello, Ada!")
 }
@@ -267,24 +269,30 @@ struct MockDependencies: Dependencies {
 
 Errors thrown by `run()` are rethrown, so `#expect(throws:)` works as usual.
 
-### Tests are non-interactive by default
+### Choose the test interaction mode
 
-`testRun` applies `.nonInteractive(assumeYes: false)` unless told otherwise, so a test that reaches
-a prompt fails instead of blocking the suite on input that never arrives. This works only to the
-extent that your factory consults `InteractionMode.current`.
+Pass `.nonInteractive(assumeYes: false)` to keep a test that reaches a prompt from blocking the
+suite on input that never arrives. There is no default argument for the mode. This works only to
+the extent that your factory consults `InteractionMode.current`.
 
 The mode is applied **after** parsing, so it overrides interactivity flags in `args`. To test the
 flags themselves, pass `nil`:
 
 ```swift
 // Let the parsed --non-interactive flag decide
-try MyTool.testRun(args: ["add-user", "--non-interactive"], interactionMode: nil)
+try await MyTool.testRun(contextFactory: nil, args: ["add-user", "--non-interactive"], interactionMode: nil)
 
 // Exercise the interactive path explicitly
-try MyTool.testRun(args: ["add-user"], interactionMode: .interactive(assumeYes: false))
+try await MyTool.testRun(contextFactory: nil, args: ["add-user"], interactionMode: .interactive(assumeYes: false))
 ```
 
-`testRun` resets the mode when it finishes, so nothing leaks into the next test on that thread.
+`testRun` discards its command scope when it finishes, so the mode does not leak into another run.
+For tests that register a mode or read command state directly, use `withIsolatedState { ... }`, or
+`MyTool.withIsolatedState(contextFactory: MockDependencies()) { ... }` to inject a factory. Both
+helpers support sync and async bodies.
+
+`testRun` captures `NnOutput` writes even when the command registers a custom writer. It installs
+no signal handlers; registered interrupt cleanups are discarded without running.
 
 ### Mocking infrastructure
 
@@ -310,7 +318,7 @@ Claude then loads the reference automatically when you're working with this pack
 
 ## Dependencies
 
-- [swift-argument-parser](https://github.com/apple/swift-argument-parser) (1.7.0+)
+- [swift-argument-parser](https://github.com/apple/swift-argument-parser) (1.8.2+)
 
 ## License
 

@@ -9,10 +9,10 @@ API for building testable command-line tools on top of Apple's ArgumentParser.
 <!-- type:NnRootCommand -->
 ## Protocol: NnRootCommand
 
-The entry-point protocol for a CLI's root command. Refines `ParsableCommand` and adds a dependency-injection seam.
+The entry-point protocol for a CLI's root command. Refines `AsyncParsableCommand` and adds a dependency-injection seam.
 
 ```swift
-public protocol NnRootCommand: ParsableCommand {
+public protocol NnRootCommand: AsyncParsableCommand {
     associatedtype Factory
     static var defaultFactory: Factory { get }
 }
@@ -29,11 +29,12 @@ public protocol NnRootCommand: ParsableCommand {
 
 | Member | Type | Description |
 |--------|------|-------------|
-| `contextFactory` | `static var Factory { get set }` | The active factory. Getter returns the thread-local value if set, else `defaultFactory`. Setter stores it in `Thread.current.threadDictionary`, keyed per command type. |
+| `contextFactory` | `static var Factory { get }` for consumers | Returns the factory injected into this command scope, else `defaultFactory`. The setter is package-only; inject through `testRun` or `withIsolatedState(contextFactory:_:)`. |
+| `main()` | `static func main() async` | Installs a fresh command scope and SIGINT/SIGTERM handling, then parses and runs the selected synchronous or async command. Selected by `@main`. |
 
 ### Behavioral Notes
 
-- **Thread-local injection** — `contextFactory` is backed by `Thread.current.threadDictionary` under key `"\(Self.self).contextFactory"`. Production reads `defaultFactory`; tests set a mock for the current thread only. No global mutable state → parallel tests are safe.
+- **Command-scoped injection** — the root’s async `main()` installs the scope before parsing; `testRun` installs a fresh scope for each run. State survives `await` and is inherited by task-group children and `Task { }`. `Task.detached` does not inherit it. Reading `contextFactory` outside a scope traps, even when `defaultFactory` exists. For direct dependency tests, use `withIsolatedState` from `NnArgumentParserTesting`.
 - **You own `Factory`** — NnArgumentParser places no constraint on it. A common convention is a `ContextFactory` protocol with `make…()` accessors for infrastructure, plus static helpers on the root command that delegate to `contextFactory`.
 - **Subcommands reach the factory through the root type** — e.g. `MyTool.makeGreeter()` resolves `MyTool.contextFactory.makeGreeter()`. ArgumentParser constructs subcommand values itself, so this static seam is how injected dependencies reach them.
 
@@ -70,7 +71,7 @@ struct Greet: ParsableCommand {
     @Option var name: String
 
     func run() throws {
-        print(MyTool.makeGreeter().greeting(for: name))
+        NnOutput.write(MyTool.makeGreeter().greeting(for: name))
     }
 }
 ```
@@ -99,16 +100,15 @@ Both cases carry `assumeYes` because suppressing prompts and pre-approving confi
 | `isInteractive` | `var Bool` | Whether prompting is allowed. `true` only for `.interactive`. |
 | `assumeYes` | `var Bool` | The associated value from either case. Independent of `isInteractive`. |
 
-### Storage (thread-local)
+### Storage (command scope)
 
 | Member | Type | Description |
 |--------|------|-------------|
-| `current` | `static var InteractionMode` | The mode for the current thread. Falls back to `resolve()` when nothing was registered, so environment and terminal checks still apply. |
-| `register(_:)` | `static func (InteractionMode)` | Records the mode for the current thread. |
+| `current` | `static var InteractionMode` | The mode for the current command scope. Outside a scope, or before registration, falls back to `resolve()`, so environment and terminal checks still apply. |
+| `register(_:)` | `static func (InteractionMode)` | Records the mode for the current command scope; traps outside a scope. |
 | `register(nonInteractive:assumeYes:)` | `static func (Bool, Bool)` | Resolves from flag values, then registers. The bridge from argument parsing to `current`. |
-| `reset()` | `static func ()` | Clears the thread's mode. Thread dictionaries outlive a run, so tests that register should clear. |
 
-Backed by `Thread.current.threadDictionary`, matching `NnRootCommand.contextFactory` — parallel tests don't interfere.
+The scope follows the command across `await`s and is discarded when the run ends. There is no `reset()` API. Both registration overloads require a scope; tests that register directly must use `withIsolatedState` from `NnArgumentParserTesting`.
 
 ### Resolution
 
@@ -166,6 +166,8 @@ public struct InteractivityOptions: ParsableArguments {
 - **`validate()` is the hook** — ArgumentParser calls it automatically while decoding the enclosing command's `@OptionGroup`, and it does so for *every command in the parsed chain* as it descends (`CommandParser.descendingParse`), not only the one that ends up running. Validation is the hook rather than `run()` because running `tool sub` never executes the root command's `run()`, so resolving the mode there would silently do nothing.
 - **Adopting the type is about discoverability** — it puts the flags in *that command's* `--help`, which matters most for automated callers. Suppression via `NO_PROMPT` or a non-terminal stdin applies whether or not a command adopts it.
 - **There is no protocol that supplies the flags for you** — ArgumentParser finds arguments by reflecting over the concrete type's *stored properties*, and Swift protocol extensions can't add stored properties. Conforming to some `InteractivityAware` protocol could never make the `@OptionGroup` exist. Declare it on the root instead (below); that's the way to avoid repeating it.
+
+Parsing a command with this group requires a command scope because validation registers state. Use the `NnRootCommand` entry point in production and `testRun` or `withIsolatedState` in tests; parsing it directly outside a scope traps.
 
 ### Where to declare it
 
@@ -318,17 +320,58 @@ struct BuildCommandOptions: ParsableArguments {
 
 ---
 
+<!-- type:NnOutput -->
+## Output: NnOutput and NnOutputWriter
+
+```swift
+public enum NnOutput {
+    public static func write(_ text: String)
+    public static func register(writer: any NnOutputWriter)
+}
+
+public protocol NnOutputWriter: Sendable {
+    func write(_ text: String)
+}
+```
+
+Use `NnOutput.write` for command reports that tests need to capture. It prints a line to stdout by default. Inside `testRun`, each write appends a newline to that run's buffer; plain `print` and other stdout writes are not captured.
+
+To route production output to a log or display, call `NnOutput.register(writer:)` inside the command scope before writing. Registration outside a scope traps. A writer receives text without an added newline and must terminate the line itself, deliver the text before returning, preserve call order, and be safe for concurrent calls. A `testRun` buffer takes precedence over a registered writer.
+
+Once the current production run is interrupting, `NnOutput.write` drops output before reaching either the writer or stdout, so ongoing work does not write into a display being torn down. A write outside any scope falls back to stdout.
+<!-- /type:NnOutput -->
+
+---
+
+<!-- type:NnInterrupt -->
+## Interrupt cleanup: NnInterrupt
+
+```swift
+public enum NnInterrupt {
+    public static func register(cleanup: @escaping @Sendable () -> Void)
+}
+```
+
+Register terminal restoration or child-process teardown inside the command scope. Registration outside a scope traps. Cleanups are synchronous and run in reverse registration order on SIGINT or SIGTERM; register a step before steps that depend on it. They are interrupt handlers, not normal-completion cleanup.
+
+The root's async `main()` installs the signal handling. On interrupt it runs the registered cleanups, writes `Interrupted.` to stderr, and terminates by the signal. Once interruption starts, the command's own error is suppressed. A second interrupt terminates immediately rather than waiting for cleanup. Code that replaces the signal handlers must restore the installed handlers for interruption to keep working.
+
+`testRun` installs no signal handling and never executes these cleanups; it discards registrations with the run.
+<!-- /type:NnInterrupt -->
+
+---
+
 ## Re-exported ArgumentParser
 
 `NnArgumentParser` declares `@_exported import ArgumentParser`, so a single `import NnArgumentParser` brings in the full ArgumentParser surface — `ParsableCommand`, `CommandConfiguration`, `@Option`, `@Flag`, `@Argument`, `ExpressibleByArgument`, etc. Do **not** add a separate `import ArgumentParser`.
 
 ## Best Practices
 
-- **Conform only the root command to `NnRootCommand`.** Subcommands stay plain `ParsableCommand`s and reach dependencies via the root type's static accessors.
+- **Conform only the root command to `NnRootCommand`.** Subcommands use `ParsableCommand`, `AsyncParsableCommand`, or `NnWorkflowCommand` and reach dependencies via the root type's static accessors.
 - **Keep `Factory` an infrastructure seam, not a service locator.** Vend primitives (shell, file system, picker); let each command assemble its feature locally.
 - **Never import ArgumentParser directly** — it arrives via `NnArgumentParser`.
-- **Don't set `contextFactory` in production** — production relies on `defaultFactory`; the setter exists for tests.
-- **Read `InteractionMode.current` in the factory, not in `run()`.** The point of the thread-local is that the flag value doesn't have to be threaded through initializers.
+- **Inject factories through testing helpers** — production relies on `defaultFactory`; the `contextFactory` setter is not public.
+- **Read `InteractionMode.current` in the factory, not in `run()`.** The point of the command scope is that the flag value doesn't have to be threaded through initializers.
 - **Declare `@OptionGroup var interactivity: InteractivityOptions` once on the root command.** The whole chain is validated, so every subcommand gets the mode registered without repeating the property. Add it per-command only when each subcommand's own `--help` must list the flags.
 - **Don't try to factor it into a protocol.** ArgumentParser reflects over stored properties; a protocol can't add one. Root-only declaration is the way to stop repeating it.
 - **Reach for `CaseInsensitiveArgument` only on enums that are already `CaseIterable`.** Retrofitting `CaseIterable` onto someone else's type means hand-maintaining `allCases`, which reintroduces the staleness the protocol removes.

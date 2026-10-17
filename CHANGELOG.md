@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-17
+
+### Added
+
+- Add `NnOutput.write(_:)` for command output and `NnOutputWriter` with
+  `NnOutput.register(writer:)` for routing output through an app-provided sink.
+- Add `NnInterrupt.register(cleanup:)` for SIGINT and SIGTERM cleanup under the root command's
+  `main()`. Cleanups run in reverse registration order before reporting `Interrupted.` and
+  terminating by the signal; further `NnOutput` writes and command errors are suppressed during
+  interruption. `testRun` installs no signal handlers and does not execute registered cleanups.
+- Add synchronous and asynchronous `withIsolatedState` helpers to `NnArgumentParserTesting`,
+  including `NnRootCommand.withIsolatedState(contextFactory:_:)` for scoped factory injection.
+
+### Changed
+
+- Require Swift 6.2 and ArgumentParser 1.8.2 or later. Upgrade the toolchain and dependency
+  constraints when adopting this release (breaking).
+- Make `NnRootCommand` and `NnWorkflowCommand` conform to `AsyncParsableCommand`, and make
+  `NnWorkflow.run()`, `NnCommandInspector.inspect()`, and `NnCommandResolver.resolve(context:)`
+  asynchronous. Await these calls and use async command entry points; synchronous subcommands
+  remain supported (breaking).
+- Keep the factory and interaction mode in a command scope that survives `await` and is inherited
+  by child tasks. Reading `contextFactory` or registering an interaction mode outside a scope now
+  traps, and `contextFactory` is no longer publicly settable. Run production commands through the
+  root's `main()`, inject test factories through `testRun` or `withIsolatedState`, and avoid reading
+  scoped state from `Task.detached` (breaking).
+- Make `testRun(contextFactory:args:interactionMode:)` asynchronous and require all three arguments
+  explicitly. Use `try await` and pass `.nonInteractive(assumeYes: false)` to retain the former
+  prompt-suppression default, or `nil` to use parsed flags and environment resolution (breaking).
+- Capture only `NnOutput.write(_:)` output in `testRun`, with a separate buffer for each parallel
+  run; registered output writers are bypassed during capture. Replace `print` calls whose output
+  must be asserted with `NnOutput.write(_:)` (breaking).
+- Run `NnWorkflowCommand` workflows on a blocking-tolerant executor so synchronous blocking work
+  in task-group children does not occupy the cooperative pool's threads.
+
+### Removed
+
+- Remove `InteractionMode.reset()`. Remove explicit reset calls and use `testRun` or
+  `withIsolatedState` in tests; registered state is discarded when its scope ends (breaking).
+
 ## [0.3.0] - 2026-10-13
 
 ### Added
@@ -51,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...1.0.0
 [0.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.2.0...0.3.0
 [0.1.0]: https://github.com/nikolainobadi/NnArgumentParser/releases/tag/0.1.0

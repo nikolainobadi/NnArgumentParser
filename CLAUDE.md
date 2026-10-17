@@ -5,10 +5,11 @@ adding a dependency-injection seam for command-line tools, an interaction-mode s
 suppressing prompts in automated contexts, and composable command workflows.
 
 - `Sources/NnArgumentParser` — the library. `Arguments/`, `Exports/`, `Interactivity/`,
-  `RootCommand/`, and `Workflow/` organize its APIs; `NnWorkflow` composes inspect, interpret,
+  `Interrupt/`, `Output/`, `RootCommand/`, `Storage/`, and `Workflow/` organize its APIs and
+  command-scoped state; `NnWorkflow` composes inspect, interpret,
   collect, interpret, and resolve stages, while `NnWorkflowCommand` adapts a workflow to a command.
-- `Sources/NnArgumentParserTesting` — `testRun` for driving whole commands in tests and workflow
-  stage mocks for exercising pipeline wiring.
+- `Sources/NnArgumentParserTesting` — async `testRun` for driving whole commands in tests,
+  `withIsolatedState` for scoped state access, and workflow stage mocks for exercising pipeline wiring.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
 
 Interactivity guidance appears in four places — the `InteractivityOptions` doc comment, `Skills/`,
@@ -40,9 +41,8 @@ until the migration, a gap nothing detected.
 
 ## Releasing
 
-Release preparation is configured in `.nnex/manifest.json` for the `main` branch and the
-`NnArgumentParser` library target. Its AI tasks cover updates to the README, agent docs, and Swift
-reference skill.
+Release preparation is configured in `.nnex/nnex.json` for the `NnArgumentParser` library target
+at `.`. Its commands are `swift build --build-tests` followed by `swift test --skip-build`.
 
 The marketplace entry is **pinned to a release tag**, not to `main`. Two consequences:
 
@@ -77,10 +77,25 @@ its own.
 
 ## Conventions
 
-- Swift 6.0, macOS 15+.
+- Swift 6.2, macOS 15+. Pull-request CI uses Xcode 26.3 on macOS 15 and runs `swift test`.
 - `@_exported import ArgumentParser` in `Exports.swift` — consumers get the full ArgumentParser
   surface from `import NnArgumentParser` and should never import ArgumentParser separately.
-- Thread-local storage backs both `NnRootCommand.contextFactory` and `InteractionMode.current`, so
-  parallel tests don't interfere. Anything registered in a test must be reset; `testRun` handles its
-  own cleanup in a `defer`.
+- `NnRootCommand` and `NnWorkflowCommand` conform to `AsyncParsableCommand`. Workflow `run()`,
+  inspector `inspect()`, and resolver `resolve(context:)` are async; collection and interpretation
+  remain synchronous. `NnWorkflowCommand` runs the workflow with a dispatch-backed task executor
+  preference to accommodate blocking stages.
+- Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
+  The root's `main()` installs the production scope; `testRun` installs one per run. State survives
+  `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering
+  state outside a scope traps; an unscoped mode read falls back to environment and terminal resolution.
+  Tests accessing state directly use `withIsolatedState`, or the root's
+  `withIsolatedState(contextFactory:_:)` to inject a factory. Scope lifetime handles cleanup;
+  there is no reset call, and the factory setter is package-only.
+- `testRun(contextFactory:args:interactionMode:)` is async and requires all three arguments.
+  An explicit mode overrides parsed flags; pass `nil` to use argument and environment resolution.
+  It captures only `NnOutput.write(_:)` output, not plain `print`, and capture takes precedence over
+  a writer registered through `NnOutput.register(writer:)`.
+- `NnInterrupt.register(cleanup:)` registers cleanup in the command scope. Production runs cleanups
+  in reverse registration order on SIGINT or SIGTERM and suppresses subsequent `NnOutput` writes.
+  `testRun` installs no signal handlers and discards registered cleanups without running them.
 - Tests use Swift Testing (`import Testing`), with backtick-quoted descriptive test names.

@@ -9,16 +9,12 @@ Utilities from the `NnArgumentParserTesting` module for driving whole commands i
 <!-- type:testRun -->
 ## Method: testRun(contextFactory:args:interactionMode:)
 
-Runs a root command end-to-end in a test and returns its captured stdout.
+Runs a root command end-to-end in a test and returns its captured `NnOutput.write` output.
 
 ```swift
 extension NnRootCommand {
     @discardableResult
-    static func testRun(
-        contextFactory: Factory? = nil,
-        args: [String]? = [],
-        interactionMode: InteractionMode? = .nonInteractive(assumeYes: false)
-    ) throws -> String
+    static func testRun(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> String
 }
 ```
 
@@ -26,17 +22,19 @@ extension NnRootCommand {
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `contextFactory` | `Factory?` | Factory to inject for this run. When non-nil it's assigned to the root command's thread-local `contextFactory`. When `nil`, `defaultFactory` is used. |
-| `args` | `[String]?` | The command-line arguments, e.g. `["greet", "--name", "Ada"]`. Defaults to `[]`. |
-| `interactionMode` | `InteractionMode?` | Mode applied for the duration of the run, **after parsing**, so it overrides any parsed interactivity flags. Defaults to `.nonInteractive(assumeYes: false)`. Pass `nil` to let the parsed args and environment decide. |
+| `contextFactory` | `Factory?` | Factory to inject for this run. When non-nil it's injected into the run's command scope. When `nil`, `defaultFactory` is used. |
+| `args` | `[String]?` | The command-line arguments, e.g. `["greet", "--name", "Ada"]`. Pass `[]` for no arguments; `nil` uses process arguments. |
+| `interactionMode` | `InteractionMode?` | Mode applied for the duration of the run, **after parsing**, so it overrides any parsed interactivity flags. Pass `.nonInteractive(assumeYes: false)` explicitly to suppress prompting. Pass `nil` to let the parsed args and environment decide. |
 
 ### Returns / Behavior
 
-- Returns everything the command wrote to **stdout**, trimmed.
-- Parses `args` via `parseAsRoot`, registers `interactionMode` if non-nil, then calls the resolved command's `run()`.
-- **Rethrows** whatever `run()` throws (restoring stdout first), so `#expect(throws:)` works.
-- stdout capture is serialized with a lock (stdout is process-global).
-- Always calls `InteractionMode.reset()` on the way out, so no mode leaks to the next test on that thread.
+- All three arguments are required; none has a default. Call with `try await`.
+- Returns only `NnOutput.write` output, trimmed. Plain `print` writes to stdout and is not captured. Registered output writers are bypassed during capture.
+- Parses `args` via `asyncParseAsRoot`, registers `interactionMode` if non-nil, then runs the selected command, awaiting it when it conforms to `AsyncParsableCommand`. Synchronous subcommands are also supported.
+- Propagates parsing and command errors. Use an async `#expect(throws:)` closure for an async call.
+- Each run owns its factory, mode, and output buffer; parallel runs do not share captured output or require process-wide stdout redirection.
+- The scope is discarded on return or throw. There is no mode to reset afterward.
+- Installs no signal handlers. `NnInterrupt` cleanups registered during the run are discarded without being executed.
 <!-- /type:testRun -->
 
 <!-- type:MockCommandInspector -->
@@ -82,7 +80,7 @@ import NnArgumentParserTesting
 
 struct PublishWorkflowTests {
     @Test
-    func `An omitted version is collected and reaches the resolver`() throws {
+    func `An omitted version is collected and reaches the resolver`() async throws {
         let inspector = MockCommandInspector(facts: PublishFacts(latestTag: "1.2.0"), throwError: false)
         let collector = MockCommandCollector<PublishRequirements, PublishAnswers>(answers: .init(version: .exact("1.3.0")), throwError: false)
         let resolver = MockCommandResolver<PublishContext, PublishResults>(results: .published, throwError: false)
@@ -94,7 +92,7 @@ struct PublishWorkflowTests {
             resolver: resolver
         )
 
-        _ = try sut.run()
+        _ = try await sut.run()
 
         #expect(resolver.capturedContexts.map(\.version) == [.exact("1.3.0")])
     }
@@ -110,38 +108,56 @@ private struct TestWorkflow: NnWorkflow {
 }
 ```
 
-To stop a run at a given stage, pass `throwError: true` and assert with `#expect(throws: MockWorkflowError.stageFailed)`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
+To stop a run at a given stage, pass `throwError: true` and assert with `await #expect(throws: MockWorkflowError.stageFailed) { try await sut.run() }`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
 <!-- /type:MockCommandInspector -->
 
-## Tests are non-interactive by default
+## Choose the test interaction mode explicitly
 
-`testRun` registers `.nonInteractive(assumeYes: false)` unless told otherwise. A test that reaches a prompt therefore **fails instead of blocking the suite** on input that will never arrive.
+Pass `interactionMode: .nonInteractive(assumeYes: false)` to `testRun`. A test that reaches a prompt therefore **fails instead of blocking the suite** on input that will never arrive.
 
 This only helps to the extent that your factory consults `InteractionMode.current` when building prompt-driven dependencies. A factory that hardcodes a real picker will still hang.
 
-The default is applied *after* parsing, so it wins over flags in `args`. **To test the flags themselves, pass `interactionMode: nil`:**
+The explicit override is applied *after* parsing, so it wins over flags in `args`. **To test the flags themselves, pass `interactionMode: nil`:**
 
 ```swift
 @Test
-func `--non-interactive is honored`() throws {
-    // nil → the parsed --non-interactive flag decides, not the testRun default
-    try MyTool.testRun(contextFactory: MockDependencies(),
-                       args: ["add-user", "--non-interactive"],
-                       interactionMode: nil)
+func `--non-interactive is honored`() async throws {
+    // nil → the parsed --non-interactive flag decides, not a test override
+    try await MyTool.testRun(contextFactory: MockDependencies(), args: ["add-user", "--non-interactive"], interactionMode: nil)
 }
 
 @Test
-func `Prompts when a terminal is available`() throws {
+func `Prompts when a terminal is available`() async throws {
     // Explicitly opt into interactive for this run
-    try MyTool.testRun(contextFactory: MockDependencies(),
-                       args: ["add-user"],
-                       interactionMode: .interactive(assumeYes: false))
+    try await MyTool.testRun(contextFactory: MockDependencies(), args: ["add-user"], interactionMode: .interactive(assumeYes: false))
 }
 ```
+
+## Isolated state without running a command
+
+`withIsolatedState(_:)` creates a fresh command scope for a synchronous or async closure. Use it when testing a factory accessor, registering a mode or output writer, or parsing a command with `InteractivityOptions` directly. `MyTool.withIsolatedState(contextFactory:_:)` also injects a factory; `contextFactory` cannot be assigned by package consumers.
+
+```swift
+import Testing
+import NnArgumentParser
+import NnArgumentParserTesting
+
+@Test
+func registeredModeIsVisible() {
+    withIsolatedState {
+        InteractionMode.register(.nonInteractive(assumeYes: true))
+        #expect(InteractionMode.current == .nonInteractive(assumeYes: true))
+    }
+}
+```
+
+The scope follows `await` and is inherited by task-group children and `Task { }`, but not `Task.detached`. Reading `contextFactory` or registering state without a scope traps. `InteractionMode.current` alone can be read outside a scope and falls back to environment and terminal resolution. These helpers do not install output capture or signal handling.
 
 ## The command-testing pattern
 
 `testRun` injects *your* `Factory`. Supply a test double of it that vends fakes, drive the real command tree, then **assert on outcomes** (printed output, values produced, side effects on your fakes) — not on interactions or call counts.
+
+The command must emit its greeting with `NnOutput.write`, as in `ApiReference.md`.
 
 ```swift
 import Testing
@@ -149,8 +165,8 @@ import NnArgumentParserTesting
 
 struct GreetCommandTests {
     @Test
-    func `Greets the provided name`() throws {
-        let output = try MyTool.testRun(contextFactory: MockDependencies(), args: ["greet", "--name", "Ada"])
+    func `Greets the provided name`() async throws {
+        let output = try await MyTool.testRun(contextFactory: MockDependencies(), args: ["greet", "--name", "Ada"], interactionMode: .nonInteractive(assumeYes: false))
 
         #expect(output == "Hello, Ada!")
     }
@@ -174,13 +190,13 @@ Have your factory's test double vend those mocks, then inject the factory via `t
 
 ## Best Practices
 
-- **Inject a fresh factory per test** — `testRun` sets the thread-local `contextFactory`; a new factory per test keeps cases isolated.
+- **Inject a fresh factory per test** — `testRun` injects the factory into its own scope; a new factory per test keeps cases isolated.
 - **Assert outcomes, not interactions** — check printed output or your fakes' resulting state, not call counts.
-- **`testRun` returns stdout** — use it for output assertions; use your injected fakes' state for side-effect assertions.
+- **`testRun` returns `NnOutput` writes** — use it for output assertions; use your injected fakes' state for side-effect assertions.
 - **Test through the root command type** — `testRun` is called on the `@main` `NnRootCommand`; it runs the whole parsed command tree, so subcommands are exercised through it.
-- **Leave `interactionMode` at its default** unless the test is *about* interactivity. The non-interactive default is a guardrail against a hung suite.
-- **Pass `interactionMode: nil` to exercise the flags** — otherwise the default silently overrides whatever `--non-interactive` / `--yes` you put in `args`.
-- **Don't call `InteractionMode.reset()` yourself after `testRun`** — it already does, in a `defer`. Do reset if you registered a mode outside a `testRun` call.
+- **Pass `.nonInteractive(assumeYes: false)` explicitly** unless the test is *about* interactivity. This keeps prompt-aware dependencies from waiting for input.
+- **Pass `interactionMode: nil` to exercise the flags** — otherwise the explicit mode overrides whatever `--non-interactive` / `--yes` you put in `args`.
+- **Use `withIsolatedState` for direct state tests** — registration requires a scope, and the scope discards state automatically. `InteractionMode.reset()` no longer exists.
 - **Test workflow interpreters directly.** They're pure, so give them inputs and assert on outputs, without mocks.
 - **Test a workflow's wiring with the stage mocks.** Use real interpreters between a `MockCommandInspector` and a `MockCommandResolver`, then assert on `capturedContexts`.
 - **Test an `NnWorkflowCommand` end-to-end with `testRun`**, like any other command. It runs `makeWorkflow()` against your injected factory.

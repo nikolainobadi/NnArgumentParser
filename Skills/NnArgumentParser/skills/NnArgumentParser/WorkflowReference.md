@@ -53,19 +53,19 @@ public protocol NnWorkflow {
 }
 
 public extension NnWorkflow {
-    func run() throws -> ResolverType.Results
+    func run() async throws -> ResolverType.Results
 }
 ```
 
 ### `run()`, provided by extension
 
 ```swift
-let facts = try inspector.inspect()
+let facts = try await inspector.inspect()
 let inspection = try inspectionInterpreter.interpret(facts: facts)
 let answers = try collector.collect(requirements: inspection.requirements)
 let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
-return try resolver.resolve(context: context)
+return try await resolver.resolve(context: context)
 ```
 
 ### Type flow
@@ -84,6 +84,7 @@ Inspector ──Facts──▶ InspectionInterpreter ──NnInspection<Findings
 
 ### Behavioral Notes
 
+- **Inspection and resolution are async.** Call the workflow with `try await`; collectors and both interpreters remain synchronous. A synchronous implementation can still satisfy an async stage requirement.
 - **The first error stops the run.** Each stage is called with `try`. A throwing inspector means the collector never runs, and a throwing collector means the resolver never runs.
 - **The collector is always called.** `run()` doesn't check whether anything is missing, so the collector must skip requirements that are already known. `NnRequirement.ask(_:)` handles this.
 - **Findings skip the collector.** They go straight from the inspection interpreter to the collection interpreter, so the collector sees only what it has to ask about.
@@ -109,12 +110,12 @@ struct PublishWorkflow: NnWorkflow {
 public protocol NnCommandInspector {
     associatedtype Facts: Sendable
 
-    func inspect() throws -> Facts
+    func inspect() async throws -> Facts
 }
 ```
 
 - Reads the environment (shell, file system, git, config) and reports what it found. A missing config is a fact (`nil`), not an error. Whether that blocks the command is for the interpreter to decide.
-- **Retroactive conformance works.** An inspector defined in a library module that already has a matching `inspect() throws -> Facts` can adopt the protocol with an empty extension in the executable:
+- **Retroactive conformance works.** An inspector defined in a library module that already has a matching `inspect() async throws -> Facts` can adopt the protocol with an empty extension in the executable:
 
 ```swift
 extension ProjectInspector: @retroactive NnCommandInspector { }
@@ -204,7 +205,7 @@ public protocol NnCommandResolver {
     associatedtype Context: Sendable
     associatedtype Results: Sendable
 
-    func resolve(context: Context) throws -> Results
+    func resolve(context: Context) async throws -> Results
 }
 ```
 
@@ -319,10 +320,10 @@ struct StatusWorkflow: NnWorkflow {
 <!-- type:NnWorkflowCommand -->
 ## Protocol: NnWorkflowCommand
 
-A `ParsableCommand` whose `run()` builds and runs a workflow, then hands the results back to the command.
+An `AsyncParsableCommand` whose `run()` builds and runs a workflow, then hands the results back to the command.
 
 ```swift
-public protocol NnWorkflowCommand: ParsableCommand {
+public protocol NnWorkflowCommand: AsyncParsableCommand {
     associatedtype Workflow: NnWorkflow
 
     func makeWorkflow() throws -> Workflow
@@ -330,16 +331,16 @@ public protocol NnWorkflowCommand: ParsableCommand {
 }
 
 public extension NnWorkflowCommand {
-    mutating func run() throws   // try handleResults(try makeWorkflow().run())
+    mutating func run() async throws
 }
 ```
 
 | Member | Role |
 |--------|------|
 | `makeWorkflow()` | The command's **composition root**. Pull infrastructure from the root command's `contextFactory`, build the stages, and inject parsed options into the inspection interpreter. |
-| `handleResults(_:)` | Presentation. Format `Results` and `print` them, usually through a formatter type. This is the only stage that writes the final report to stdout. |
+| `handleResults(_:)` | Presentation. Format `Results` and write them with `NnOutput.write`, usually through a formatter type. This is the only stage that writes the final report to stdout. |
 
-Don't implement `run()` yourself. The extension provides it.
+Don't implement `run()` yourself. The extension builds the workflow, awaits it with a blocking-tolerant executor preference, then calls synchronous `handleResults(_:)`. This lets workflow task-group children make blocking calls without occupying the cooperative pool's threads. Calling `workflow.run()` directly does not install this preference. Use `NnOutput.write` so `testRun` can capture the report.
 
 ### Usage Example
 
@@ -366,7 +367,7 @@ extension MyTool {
         }
 
         func handleResults(_ results: PublishResolver.Results) throws {
-            print(PublishResultsFormatter.message(for: results))
+            NnOutput.write(PublishResultsFormatter.message(for: results))
         }
     }
 }
