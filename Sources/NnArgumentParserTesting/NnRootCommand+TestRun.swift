@@ -45,16 +45,61 @@ extension NnRootCommand {
     ///
     /// - Note: A run installs no interrupt handling and never touches the process's signal handlers.
     ///   Cleanups the command registers with ``NnInterrupt/register(cleanup:)`` are kept with the run
-    ///   and discarded with it, never run.
+    ///   and discarded with it, never run. To test them, use
+    ///   ``testRunCapturingCleanups(contextFactory:args:interactionMode:)``.
     @discardableResult
     public static func testRun(
         contextFactory: Factory?,
         args: [String]?,
         interactionMode: InteractionMode?
     ) async throws -> String {
+        return try await runInFreshScope(contextFactory: contextFactory, args: args, interactionMode: interactionMode).output
+    }
+
+    /// Runs the command like ``testRun(contextFactory:args:interactionMode:)``, and also returns the
+    /// interrupt cleanups it registered.
+    ///
+    /// No interrupt is simulated and no cleanup is run. The test decides when to run them, then
+    /// asserts on the outcome in its fakes.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let result = try await MyCommand.testRunCapturingCleanups(
+    ///     contextFactory: factory,
+    ///     args: ["watch"],
+    ///     interactionMode: .nonInteractive(assumeYes: false)
+    /// )
+    ///
+    /// result.interruptCleanups.forEach { $0() }
+    /// #expect(factory.terminal.wasRestored)
+    /// ```
+    ///
+    /// - Returns: The captured output and the registered cleanups, last registered first.
+    /// - Throws: Any error thrown by the command's `run()` method.
+    public static func testRunCapturingCleanups(
+        contextFactory: Factory?,
+        args: [String]?,
+        interactionMode: InteractionMode?
+    ) async throws -> NnTestRunResult {
+        let run = try await runInFreshScope(contextFactory: contextFactory, args: args, interactionMode: interactionMode)
+
+        return .init(output: run.output, interruptCleanups: NnInterrupt.cleanups(in: run.box))
+    }
+}
+
+// MARK: - Private Methods
+private extension NnRootCommand {
+    /// Parses and runs the command in its own scope, returning its output and the scope's state.
+    static func runInFreshScope(
+        contextFactory: Factory?,
+        args: [String]?,
+        interactionMode: InteractionMode?
+    ) async throws -> (output: String, box: NnStateBox) {
         return try await NnStateScope.withFreshBox {
             let buffer = NnOutputBuffer()
-            NnStateScope.requiredBox(for: "testRun")[NnOutputBuffer.storageKey] = buffer
+            let box = NnStateScope.requiredBox(for: "testRun")
+            box[NnOutputBuffer.storageKey] = buffer
 
             if let contextFactory { self.contextFactory = contextFactory }
 
@@ -70,7 +115,7 @@ extension NnRootCommand {
                 try command.run()
             }
 
-            return buffer.contents.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (buffer.contents.trimmingCharacters(in: .whitespacesAndNewlines), box)
         }
     }
 }

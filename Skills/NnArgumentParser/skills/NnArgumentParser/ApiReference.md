@@ -356,7 +356,7 @@ Register terminal restoration or child-process teardown inside the command scope
 
 The root's async `main()` installs the signal handling. On interrupt it runs the registered cleanups, writes `Interrupted.` to stderr, and terminates by the signal. Once interruption starts, the command's own error is suppressed. A second interrupt terminates immediately rather than waiting for cleanup. Code that replaces the signal handlers must restore the installed handlers for interruption to keep working.
 
-`testRun` installs no signal handling and never executes these cleanups; it discards registrations with the run.
+`testRun` installs no signal handling and never executes these cleanups; it discards registrations with the run. To test a cleanup, use `testRunCapturingCleanups` from `NnArgumentParserTesting`, which returns the run's cleanups for the test to call — see `TestingReference.md`.
 <!-- /type:NnInterrupt -->
 
 ---

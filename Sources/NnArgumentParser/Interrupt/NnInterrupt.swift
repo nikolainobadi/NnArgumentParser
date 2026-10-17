@@ -16,7 +16,7 @@ public enum NnInterrupt {
     /// steps that depend on it.
     ///
     /// Under `testRun`, nothing handles interrupts: the cleanup is kept with the run and discarded
-    /// with it, never run.
+    /// with it, never run. Use `testRunCapturingCleanups` to get a run's cleanups back and run them.
     ///
     /// - Important: Registering outside a command scope traps, matching ``NnOutput/register(writer:)``.
     public static func register(cleanup: @escaping @Sendable () -> Void) {
@@ -28,7 +28,7 @@ extension NnInterrupt {
     /// The cleanups registered in `box`, in run order: last registered first.
     ///
     /// Takes the box rather than reading the scope, because signal handling runs outside any task.
-    static func cleanups(in box: NnStateBox) -> [@Sendable () -> Void] {
+    package static func cleanups(in box: NnStateBox) -> [@Sendable () -> Void] {
         let registered = box[cleanupsStorageKey] as? [@Sendable () -> Void] ?? []
 
         return registered.reversed()

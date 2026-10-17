@@ -1,25 +1,35 @@
 {
   "packagePath": ".",
-  "scannedAt": "2026-10-13T00:00:00Z",
+  "scannedAt": "2026-10-17T00:00:00Z",
   "git": {
-    "sha": "55a7d542a46bed7ca41e148ff5dbaf3941312e9a",
-    "tag": null
+    "sha": "d0b78976946e350929d3c505983d16e4219499cb",
+    "tag": "1.0.0"
   },
   "files": {
     "Sources/NnArgumentParser/Arguments/CaseInsensitiveArgument.swift": "98484b3adca64233f5a7181e57ff215e21a16e4adbb0c9ff6b83b1670d6aadea",
     "Sources/NnArgumentParser/Arguments/KeyValueArgument.swift": "1cf86aa8205514eacb9fc94cb85452a307398bba2d708db2408813e94e0b219a",
     "Sources/NnArgumentParser/Exports/Exports.swift": "9a78fc1f2982cc67c611951389f26b00c0313bc65c86f02b86ead7addcb6b32c",
-    "Sources/NnArgumentParser/Interactivity/InteractionMode+Resolution.swift": "5f2cd9d3fbb509fa053924d28b514d9a4fe11358a63f20f1c717a39950b97414",
-    "Sources/NnArgumentParser/Interactivity/InteractionMode+Storage.swift": "fbd7b28644c40ac422e056ebe5e514071cbb44c54277cf0814d2f65e38025033",
-    "Sources/NnArgumentParser/Interactivity/InteractionMode.swift": "225d7cd83266af0b5fca2214f6ea0c74c6fa3ec8c9cd76b9f0ceb145432b500b",
-    "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift": "822e44a911601c074e878cb20833defad19e66ee276a495fa89ff3cef44929b9",
-    "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift": "663a1cc63968fe4fcaf2f803bb0beb2fa8579ac74a6f3095eda43ff81936ae76",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Resolution.swift": "fbfcafcc143157667f957ab3a76f2c9f9b00561192d4a5423466f3b184eb3ce0",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode+Storage.swift": "a11d6aa58d8baa2f25dbdd22ddf527c3cd1f0fd096997e317aad23de12afc87d",
+    "Sources/NnArgumentParser/Interactivity/InteractionMode.swift": "cd84861254639b5205fbebbd65e2e1ed4f214419078087a85f7578a01fdd9dbd",
+    "Sources/NnArgumentParser/Interactivity/InteractivityOptions.swift": "c672af13fcd304e765e1bac3b970e93e058d396a60451822c6981ce5593a4682",
+    "Sources/NnArgumentParser/Interrupt/NnInterrupt.swift": "4d40ef72f92611cbb9b8471235cf6cd7bcf9d110763264a19ceb1651455737a2",
+    "Sources/NnArgumentParser/Interrupt/NnInterruptCoordinator.swift": "f64d80c98a96e513c5131a22e8685e597d5d517c863013e25057e9ad00e7ecb7",
+    "Sources/NnArgumentParser/Interrupt/NnInterruptSignal.swift": "d5f44e0242d9251286997149de986897eb79d232bb1949fc0d7f2e384700920c",
+    "Sources/NnArgumentParser/Output/NnOutput.swift": "847bf1f7f8a57c51a8719b32dd91bf743abf1ab1ebea8994e92b63bb3aeb9ef0",
+    "Sources/NnArgumentParser/Output/NnOutputWriter.swift": "9b2507210979196ac49a489439b9d86fb290f63d78d2c4f47e3b4baec7ecf73e",
+    "Sources/NnArgumentParser/RootCommand/NnRootCommand.swift": "816b78bc40817568151be5669498f8aa2f66bece48eadc446a8ab0eb96a2e219",
+    "Sources/NnArgumentParser/RootCommand/NnRunCompletion.swift": "8aa24b7a013c4b1ee2601c7ae7e1dbce5f1222e2d774204fc899994a9c3026ef",
+    "Sources/NnArgumentParser/Storage/NnStateScope.swift": "a27d78507770396ea6247b37f18af926979e4f44fe794121fd41019820f16a30",
+    "Sources/NnArgumentParser/Workflow/NnBlockingTolerantExecutor.swift": "8b03a09487cfcf9732c4700236311a2744a5a5cfa89d3ecab67ff912eedee213",
     "Sources/NnArgumentParser/Workflow/NnInspection.swift": "3d6eddef0f7aa0cf6f103267084cbdf4a3208f0f5d49aa7e7f9d269cc38f2ad6",
     "Sources/NnArgumentParser/Workflow/NnPassthroughStages.swift": "2fece53ce78f80597bfb0a87ddc22d543985c19594879d59c70edc1bfcb46100",
     "Sources/NnArgumentParser/Workflow/NnRequirement.swift": "07e5ff05dbb9232cde64a35df535e41f27798ebd499c49f5ac3e86399229e1f6",
-    "Sources/NnArgumentParser/Workflow/NnWorkflow.swift": "2cfbbf2f1a416d4c6490fe2ce1bfcca1e05effdb4b65fa56672de97942f895d0",
-    "Sources/NnArgumentParser/Workflow/NnWorkflowCommand.swift": "5cef90aee8c138878c12b54c2da10329d19f1bfa8183a415e05f679279d914f8",
-    "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "da2e94170d33e5618bef5a6018ae7cdffb380695ec6d092adc9f8bc60cdb14e6",
+    "Sources/NnArgumentParser/Workflow/NnWorkflow.swift": "d36e8ba75fb9e6d380ad7ecf93400b0e4ba5356384fc0fc90c263608f49012eb",
+    "Sources/NnArgumentParser/Workflow/NnWorkflowCommand.swift": "8c1e2e8ca94d2417f7fb491c66b48d9d6e9e255f77088ca97bd1e07004436e99",
+    "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift": "ba2443e2a5466b4fec0525ddfc57aa2b4a20707844a3e8416407179f7513bd22",
+    "Sources/NnArgumentParserTesting/NnTestRunResult.swift": "8a31bc95247b5c42416df055e1a605a62b06ff7640fde669b63ff1f9f33e9a55",
+    "Sources/NnArgumentParserTesting/WithIsolatedState.swift": "e0fcd7bdcac8f0227a70d7c92154c89472f9ba3f13d0ecfb9bddaaec998c9fed",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandCollector.swift": "b54f6269bceaeb3a1730967f609a56ca6965f61556097b971bb00aed5bbaa985",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandInspector.swift": "42941ed702d8f6b4fa8684f4f5331eae6f2b59b30d19f619132568f141d4eafb",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandResolver.swift": "18d91f7aea4ed95f4f290deda67a19e205b0e8a0b6075053253ddfbf7798fa56",
@@ -32,7 +42,7 @@
       "doc": "ApiReference.md",
       "anchor": "NnRootCommand",
       "conforms": [
-        "ParsableCommand"
+        "AsyncParsableCommand"
       ]
     },
     {
@@ -179,7 +189,7 @@
       "doc": "WorkflowReference.md",
       "anchor": "NnWorkflowCommand",
       "conforms": [
-        "ParsableCommand"
+        "AsyncParsableCommand"
       ]
     },
     {
@@ -218,6 +228,52 @@
         "Error",
         "Equatable"
       ]
+    },
+    {
+      "name": "NnOutput",
+      "file": "Sources/NnArgumentParser/Output/NnOutput.swift",
+      "doc": "ApiReference.md",
+      "anchor": "NnOutput",
+      "conforms": []
+    },
+    {
+      "name": "NnOutputWriter",
+      "file": "Sources/NnArgumentParser/Output/NnOutputWriter.swift",
+      "doc": "ApiReference.md",
+      "anchor": "NnOutput",
+      "conforms": [
+        "Sendable"
+      ]
+    },
+    {
+      "name": "NnInterrupt",
+      "file": "Sources/NnArgumentParser/Interrupt/NnInterrupt.swift",
+      "doc": "ApiReference.md",
+      "anchor": "NnInterrupt",
+      "conforms": []
+    },
+    {
+      "name": "testRunCapturingCleanups",
+      "file": "Sources/NnArgumentParserTesting/NnRootCommand+TestRun.swift",
+      "doc": "TestingReference.md",
+      "anchor": "testRunCapturingCleanups",
+      "conforms": []
+    },
+    {
+      "name": "NnTestRunResult",
+      "file": "Sources/NnArgumentParserTesting/NnTestRunResult.swift",
+      "doc": "TestingReference.md",
+      "anchor": "testRunCapturingCleanups",
+      "conforms": [
+        "Sendable"
+      ]
+    },
+    {
+      "name": "withIsolatedState",
+      "file": "Sources/NnArgumentParserTesting/WithIsolatedState.swift",
+      "doc": "TestingReference.md",
+      "anchor": "withIsolatedState",
+      "conforms": []
     }
   ]
 }
