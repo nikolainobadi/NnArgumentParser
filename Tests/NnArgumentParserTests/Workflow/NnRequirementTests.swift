@@ -67,8 +67,10 @@ extension NnRequirementTests {
 // MARK: - Test Accessors
 extension NnRequirementTests {
     @Test
-    func `A known requirement exposes its value`() {
-        #expect(makeSUT(known: "configured").knownValue == "configured")
+    func `A known requirement exposes its value`() throws {
+        let value = try #require(makeSUT(known: "configured").knownValue)
+
+        #expect(value == "configured")
     }
 
     @Test
@@ -77,8 +79,10 @@ extension NnRequirementTests {
     }
 
     @Test
-    func `An unknown requirement exposes its info`() {
-        #expect(makeSUT(unknown: 7).unknownInfo == 7)
+    func `An unknown requirement exposes its info`() throws {
+        let info = try #require(makeSUT(unknown: 7).unknownInfo)
+
+        #expect(info == 7)
     }
 
     @Test

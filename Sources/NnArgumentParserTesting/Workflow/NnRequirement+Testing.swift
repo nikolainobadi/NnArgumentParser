@@ -7,7 +7,6 @@
 
 import NnArgumentParser
 
-// NnRequirement isn't Equatable (Void info can't conform), so tests pull out the case they expect.
 public extension NnRequirement {
     var knownValue: Value? {
         guard case .known(let value) = self else {

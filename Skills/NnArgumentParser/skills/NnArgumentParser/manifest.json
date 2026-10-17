@@ -35,7 +35,7 @@
     "Sources/NnArgumentParserTesting/Workflow/MockCommandInspector.swift": "42941ed702d8f6b4fa8684f4f5331eae6f2b59b30d19f619132568f141d4eafb",
     "Sources/NnArgumentParserTesting/Workflow/MockCommandResolver.swift": "18d91f7aea4ed95f4f290deda67a19e205b0e8a0b6075053253ddfbf7798fa56",
     "Sources/NnArgumentParserTesting/Workflow/MockWorkflowError.swift": "e996fa57899e206de0feaf84d6ea485552d8cb6b33fe8ccdff6616e5ebd79959",
-    "Sources/NnArgumentParserTesting/Workflow/NnRequirement+Testing.swift": "9b1935cbdc70d39efea82164ef5a0666ee7ff27bbe4450907f0f3ab17c5bebd4"
+    "Sources/NnArgumentParserTesting/Workflow/NnRequirement+Testing.swift": "4fc6339b492e21a2ce487f60b292a901e839a08a2a131d5ecc6c375e86fe806e"
   },
   "types": [
     {
