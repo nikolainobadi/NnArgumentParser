@@ -28,6 +28,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **End-to-end testing** — async `testRun` parses arguments, runs sync or async commands, and captures `NnOutput` writes
 - **Custom output** — `NnOutput.register(writer:)` routes output through an app-provided `NnOutputWriter`
 - **Interrupt cleanup** — `NnInterrupt.register(cleanup:)` registers teardown for SIGINT and SIGTERM
+- **Completion observers** — `NnCompletion.register(observer:)` tells the tool whether its run succeeded or failed, before a failure is reported
 - **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
 - **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options

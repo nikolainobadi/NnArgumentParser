@@ -4,7 +4,7 @@ A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift
 adding a dependency-injection seam for command-line tools, an interaction-mode system for
 suppressing prompts in automated contexts, and composable command workflows.
 
-- `Sources/NnArgumentParser` — the library. `Arguments/`, `Exports/`, `Interactivity/`,
+- `Sources/NnArgumentParser` — the library. `Arguments/`, `Completion/`, `Exports/`, `Interactivity/`,
   `Interrupt/`, `Output/`, `RootCommand/`, `Storage/`, and `Workflow/` organize its APIs and
   command-scoped state; `NnWorkflow` composes inspect, interpret,
   collect, interpret, and resolve stages, while `NnWorkflowCommand` adapts a workflow to a command.
@@ -104,6 +104,11 @@ its own.
   with the same three required arguments. It returns `NnTestRunResult` with captured `output`
   and `interruptCleanups` in reverse registration order. It installs no signal handlers and runs
   no cleanups; call the returned closures explicitly, then assert on the test doubles.
+- `NnCompletion.register(observer:)` registers a completion observer in the command scope. Observers
+  run once, in registration order, after the command returns or throws and before `main()` reports a
+  failure; interrupted runs notify nobody. `NnRunOutcome.failed` carries `message(for:)` (no `Error: `
+  prefix) and the exit code; clean exits are `.succeeded`. `testRun` and `testRunCapturingCleanups`
+  notify observers too, for parse failures as well as run failures, before returning or rethrowing.
 - `NnArgumentParserTesting` adds `knownValue` and `unknownInfo` accessors to `NnRequirement`.
   Each returns the matching case's payload, or `nil` for the other case. For requirement assertions,
   unwrap the expected payload with `#require`, then assert on its value or fields.

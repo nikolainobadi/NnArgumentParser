@@ -35,6 +35,7 @@ extension NnRootCommand {
 - Each run owns its factory, mode, and output buffer; parallel runs do not share captured output or require process-wide stdout redirection.
 - The scope is discarded on return or throw. There is no mode to reset afterward.
 - Installs no signal handlers. `NnInterrupt` cleanups registered during the run are discarded without being executed. To test them, use `testRunCapturingCleanups`.
+- Notifies `NnCompletion` observers with the run's outcome, including a parse failure, before returning or rethrowing. An observer's `NnOutput.write` output is in the returned string only when the run succeeds; on failure the error is rethrown and the captured output is discarded.
 <!-- /type:testRun -->
 
 <!-- type:testRunCapturingCleanups -->
@@ -59,6 +60,7 @@ public struct NnTestRunResult: Sendable {
 - `output` is identical to what `testRun` returns: trimmed `NnOutput.write` output.
 - `interruptCleanups` are last-registered-first, the order production runs them on SIGINT/SIGTERM. Cleanups registered after an `await` are included.
 - **No interrupt is simulated and no cleanup runs on its own.** The test calls them, then asserts on its fakes.
+- Notifies `NnCompletion` observers exactly as `testRun` does.
 - The selected command must finish successfully before the result is available. If parsing or running throws, the error propagates and no result or cleanups are returned.
 - Calling the returned closures does not restore the run's command scope. Capture the dependencies needed for teardown when registering the cleanup; reading `contextFactory` inside the cleanup traps when the caller has no scope. Cleanup output is not added to the returned `output` string.
 
@@ -78,6 +80,25 @@ func `Interrupting a watch restores the terminal`() async throws {
 }
 ```
 <!-- /type:testRunCapturingCleanups -->
+
+## Testing completion observers
+
+There is no separate helper: register an observer that records into your test double, run the command with `testRun`, then assert on what it recorded. Requires NnArgumentParser 1.2.0 or later.
+
+```swift
+@Test
+func `A failed release tells the run log it failed`() async throws {
+    let factory = MockDependencies()
+
+    await #expect(throws: (any Error).self) {
+        try await MyTool.testRun(contextFactory: factory, args: ["release"], interactionMode: .nonInteractive(assumeYes: false))
+    }
+
+    #expect(factory.runLog.outcomes == [.failed(message: "build failed", exitCode: 1)])
+}
+```
+
+A validation failure is thrown wrapped in ArgumentParser's own error type, so expect `(any Error).self` rather than `ValidationError.self`.
 
 <!-- type:MockCommandInspector -->
 ## Workflow stage mocks

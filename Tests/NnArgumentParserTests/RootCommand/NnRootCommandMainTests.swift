@@ -85,6 +85,24 @@ struct NnRootCommandMainTests {
             await InterruptibleRoot.main(arguments: ["--outcome", "succeed"])
         }
     }
+
+    @Test
+    func `A successful run tells observers it succeeded`() async {
+        let result = await #expect(processExitsWith: .success, observing: [\.standardErrorContent]) {
+            await InterruptibleRoot.main(arguments: ["--outcome", "succeed"])
+        }
+
+        #expect(errorOutput(of: result) == "outcome: succeeded\n")
+    }
+
+    @Test
+    func `A failed run tells observers before the error is reported`() async {
+        let result = await #expect(processExitsWith: .failure, observing: [\.standardErrorContent]) {
+            await InterruptibleRoot.main(arguments: ["--outcome", "fail"])
+        }
+
+        #expect(errorOutput(of: result).hasPrefix("outcome: failed(message: \"boom\", exitCode: 1)\nError: boom"))
+    }
     #endif
 }
 
@@ -120,6 +138,9 @@ private struct InterruptibleRoot: NnRootCommand {
     @Option var outcome: String
 
     func run() async throws {
+        // Registered for every outcome, so the exact-stderr interrupt tests also prove interrupted runs notify nobody.
+        NnCompletion.register(observer: { fputs("outcome: \($0)\n", stderr) })
+
         if outcome.hasPrefix("interrupt") {
             // Slow like real teardown, so main() reaches its decision while the cleanup is still running.
             NnInterrupt.register(cleanup: {
