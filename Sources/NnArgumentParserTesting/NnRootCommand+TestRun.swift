@@ -47,6 +47,10 @@ extension NnRootCommand {
     ///   Cleanups the command registers with ``NnInterrupt/register(cleanup:)`` are kept with the run
     ///   and discarded with it, never run. To test them, use
     ///   ``testRunCapturingCleanups(contextFactory:args:interactionMode:)``.
+    ///
+    /// - Note: Observers registered with ``NnCompletion/register(observer:)`` are told the run's
+    ///   outcome, including a parse failure, before this returns or rethrows. What they write
+    ///   through ``NnOutput/write(_:)`` is in the returned output only when the run succeeds.
     @discardableResult
     public static func testRun(
         contextFactory: Factory?,
@@ -60,7 +64,7 @@ extension NnRootCommand {
     /// interrupt cleanups it registered.
     ///
     /// No interrupt is simulated and no cleanup is run. The test decides when to run them, then
-    /// asserts on the outcome in its fakes.
+    /// asserts on the outcome in its fakes. Completion observers are notified as under `testRun`.
     ///
     /// ## Example
     ///
@@ -103,17 +107,24 @@ private extension NnRootCommand {
 
             if let contextFactory { self.contextFactory = contextFactory }
 
-            var command = try await asyncParseAsRoot(args)
+            do {
+                var command = try await asyncParseAsRoot(args)
 
-            if let interactionMode {
-                InteractionMode.register(interactionMode)
+                if let interactionMode {
+                    InteractionMode.register(interactionMode)
+                }
+
+                if var asyncCommand = command as? AsyncParsableCommand {
+                    try await asyncCommand.run()
+                } else {
+                    try command.run()
+                }
+            } catch {
+                NnCompletion.notify(runOutcome(for: .failure(error)), in: box)
+                throw error
             }
 
-            if var asyncCommand = command as? AsyncParsableCommand {
-                try await asyncCommand.run()
-            } else {
-                try command.run()
-            }
+            NnCompletion.notify(runOutcome(for: .success(())), in: box)
 
             return (buffer.contents.trimmingCharacters(in: .whitespacesAndNewlines), box)
         }

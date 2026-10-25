@@ -1,6 +1,6 @@
 ---
 name: NnArgumentParser
-description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, structuring a command as an inspect/collect/resolve pipeline with NnWorkflow / NnWorkflowCommand / NnRequirement / NnCommandInspector / NnCommandCollector / NnCommandResolver, testing workflows with MockCommandInspector / MockCommandCollector / MockCommandResolver, asserting on NnRequirement in tests with knownValue / unknownInfo, routing output with NnOutput / NnOutputWriter, registering interrupt cleanup with NnInterrupt, testing interrupt cleanups with testRunCapturingCleanups / NnTestRunResult, isolating test state with withIsolatedState, or testing commands end-to-end with testRun and an injected mock factory.
+description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, structuring a command as an inspect/collect/resolve pipeline with NnWorkflow / NnWorkflowCommand / NnRequirement / NnCommandInspector / NnCommandCollector / NnCommandResolver, testing workflows with MockCommandInspector / MockCommandCollector / MockCommandResolver, asserting on NnRequirement in tests with knownValue / unknownInfo, routing output with NnOutput / NnOutputWriter, registering interrupt cleanup with NnInterrupt, observing how a run ended with NnCompletion / NnRunOutcome, testing interrupt cleanups with testRunCapturingCleanups / NnTestRunResult, isolating test state with withIsolatedState, or testing commands end-to-end with testRun and an injected mock factory.
 user-invocable: true
 ---
 
@@ -18,7 +18,7 @@ documentation land in the same PR.
 
 | File | Purpose | Load When |
 |------|---------|-----------|
-| `ApiReference.md` | `NnRootCommand` protocol, the `contextFactory` injection seam, `InteractionMode` / `InteractivityOptions`, `NnOutput` / `NnOutputWriter`, `NnInterrupt`, and the re-exported ArgumentParser surface | Building a CLI root command, wiring the factory, `defaultFactory` vs `contextFactory`, suppressing prompts, routing output, cleaning up on interrupt |
+| `ApiReference.md` | `NnRootCommand` protocol, the `contextFactory` injection seam, `InteractionMode` / `InteractivityOptions`, `NnOutput` / `NnOutputWriter`, `NnInterrupt`, `NnCompletion` / `NnRunOutcome`, and the re-exported ArgumentParser surface | Building a CLI root command, wiring the factory, `defaultFactory` vs `contextFactory`, suppressing prompts, routing output, cleaning up on interrupt, observing how a run ended |
 | `WorkflowReference.md` | `NnWorkflow` and its five stage protocols, `NnInspection`, `NnRequirement`, `NnWorkflowError`, the passthrough stages, `NnWorkflowCommand`, and what each stage may and may not do | Structuring a command's `run()` as inspect → collect → resolve, asking only for missing input, wiring a workflow in `makeWorkflow()` |
 | `TestingReference.md` | `testRun(contextFactory:args:interactionMode:)`, `testRunCapturingCleanups` / `NnTestRunResult`, the command-testing pattern (inject a mock factory, run, assert on outcomes), `withIsolatedState`, the workflow stage mocks, and the `knownValue` / `unknownInfo` requirement accessors | Writing tests that drive whole commands end-to-end, testing the interactivity flags, testing interrupt cleanups, testing a workflow's stages, or asserting on an interpreter's requirements |
 
@@ -30,10 +30,11 @@ documentation land in the same PR.
 - **Factory** — *your* type (e.g. a `ContextFactory` protocol) vending the tool's infrastructure. NnArgumentParser doesn't define it.
 - **@_exported ArgumentParser** — `import NnArgumentParser` re-exports all of ArgumentParser (`ParsableCommand`, `CommandConfiguration`, `@Option`, `@Flag`, `@Argument`). Don't import ArgumentParser separately.
 
-### Output and interrupts
+### Output, interrupts and completion
 - **NnOutput.write(_:)** — prints a line in production, routes to a registered `NnOutputWriter`, or captures into the current `testRun` buffer. Capture takes precedence over a writer. Writes are dropped once that production run is interrupting.
 - **NnOutput.register(writer:)** — requires a command scope. Writers are `Sendable`, deliver synchronously in call order, support concurrent calls, and add their own line ending.
 - **NnInterrupt.register(cleanup:)** — registers a synchronous `@Sendable` cleanup in the command scope. Production `main()` runs cleanups last-registered-first on SIGINT/SIGTERM. `testRun` installs no signal handlers and discards cleanups without running them.
+- **NnCompletion.register(observer:)** — registers a synchronous `@Sendable (NnRunOutcome) -> Void` in the command scope. Called once, in registration order, after the command returns or throws and before `main()` reports a failure; not on interrupt. `NnRunOutcome` is `.succeeded` (including `CleanExit`) or `.failed(message:exitCode:)`, where `message` lacks the `Error: ` prefix. `testRun` notifies too. Write failure hints to stderr.
 
 ### Interactivity
 - **InteractionMode** — `enum` with `.interactive(assumeYes:)` / `.nonInteractive(assumeYes:)`. Read `InteractionMode.current` in your factory to decide between a real picker and a non-interactive one. Stored in the command scope; outside a scope, reads fall back to environment and terminal resolution. Registration requires a scope. There is no `reset()`.
@@ -93,3 +94,4 @@ documentation land in the same PR.
 - "How do I assert a command's printed output in a test?" -> Loads TestingReference.md
 - "Why does my test ignore the --non-interactive flag I passed?" -> Loads TestingReference.md
 - "How do I test my interrupt cleanup?" -> Loads TestingReference.md
+- "How do I log whether my command failed?" -> Loads ApiReference.md

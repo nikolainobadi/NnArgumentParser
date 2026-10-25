@@ -60,6 +60,9 @@ extension NnRootCommand {
     /// It parses and runs the command the way ArgumentParser's `main` does. Once SIGINT or SIGTERM
     /// has arrived, though, it neither prints the command's error nor exits; the interrupt's
     /// cleanups end the process instead. See ``NnInterrupt``.
+    ///
+    /// Without an interrupt, observers registered with ``NnCompletion/register(observer:)`` are
+    /// told the run's outcome before a failure is reported.
     public static func main() async {
         await main(arguments: nil)
     }
@@ -84,8 +87,9 @@ extension NnRootCommand {
 
             switch NnRunCompletion(outcome: outcome, isInterrupting: coordinator.isInterrupting) {
             case .finish:
-                break
+                NnCompletion.notify(runOutcome(for: outcome), in: box)
             case .exit(let error):
+                NnCompletion.notify(runOutcome(for: outcome), in: box)
                 Self.exit(withError: error)
             case .park:
                 await withUnsafeContinuation { (_: UnsafeContinuation<Void, Never>) in }

@@ -361,6 +361,58 @@ The root's async `main()` installs the signal handling. On interrupt it runs the
 
 ---
 
+<!-- type:NnCompletion -->
+## Completion: NnCompletion and NnRunOutcome
+
+Requires NnArgumentParser 1.2.0 or later.
+
+```swift
+public enum NnCompletion {
+    public static func register(observer: @escaping @Sendable (NnRunOutcome) -> Void)
+}
+
+public enum NnRunOutcome: Sendable, Equatable {
+    case succeeded
+    case failed(message: String, exitCode: Int32)
+}
+```
+
+Register an observer inside the command scope to learn how the run ended — to finish a log, record telemetry, or point the user at a log file. Registration outside a scope traps. A command can't catch its own error (`NnWorkflowCommand.run()` is provided), so this is the way to see it.
+
+- **When:** once, after the command returns or throws, and before the root's `main()` reports a failure.
+- **Order:** registration order. Observers report what happened; they aren't teardown.
+- **Synchronous, non-throwing**, like interrupt cleanups.
+- **Outcome:** `.failed` carries the root's `message(for:)` and `exitCode(for:)` raw value. The message is the error's own text, without the `Error: ` prefix or usage the printed report adds — `boom`, not `Error: boom`.
+- **Clean exits succeed:** an error whose exit code is `ExitCode.success`, such as `CleanExit` or `ExitCode.success`, is reported as `.succeeded`.
+- **Interrupted runs notify nobody.** Use `NnInterrupt.register(cleanup:)` for interrupt teardown.
+- **Parse failures** go through the same path, but observers usually don't exist yet: `--help`, `--version` and bad arguments notify nobody. An observer registered in a `validate()` is told about a validation failure.
+- **Write failure hints to stderr.** A line written to stderr comes just before the `Error:` line. `NnOutput.write` goes to stdout, which is fully buffered when piped and flushed at exit, so it has no ordering guarantee relative to the error.
+
+### Usage Example
+
+```swift
+struct DefaultFactory: ContextFactory {
+    func makeContext() throws -> Context {
+        let log = try RunLog.create()
+
+        NnCompletion.register(observer: { outcome in
+            log.finish(with: outcome)
+
+            if case .failed = outcome {
+                fputs("Log: \(log.path)\n", stderr)
+            }
+        })
+
+        return Context(log: log)
+    }
+}
+```
+
+`testRun` and `testRunCapturingCleanups` notify observers too — see `TestingReference.md`.
+<!-- /type:NnCompletion -->
+
+---
+
 ## Re-exported ArgumentParser
 
 `NnArgumentParser` declares `@_exported import ArgumentParser`, so a single `import NnArgumentParser` brings in the full ArgumentParser surface — `ParsableCommand`, `CommandConfiguration`, `@Option`, `@Flag`, `@Argument`, `ExpressibleByArgument`, etc. Do **not** add a separate `import ArgumentParser`.
