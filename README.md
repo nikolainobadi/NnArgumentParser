@@ -45,7 +45,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.1.0")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.2.0")
 ```
 
 Then add the product to your target:
@@ -273,6 +273,11 @@ struct MockDependencies: Dependencies {
 ```
 
 Errors thrown by `run()` are rethrown, so `#expect(throws:)` works as usual.
+
+Completion observers registered with `NnCompletion.register(observer:)` receive the run's
+`NnRunOutcome` before `testRun` returns or rethrows: `.succeeded` or `.failed(message:exitCode:)`.
+Observer writes through `NnOutput` are included in the returned output when the run succeeds.
+`testRunCapturingCleanups` also notifies completion observers.
 
 ### Choose the test interaction mode
 

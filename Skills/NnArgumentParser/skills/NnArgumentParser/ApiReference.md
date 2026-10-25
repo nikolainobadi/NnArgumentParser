@@ -390,6 +390,8 @@ Register an observer inside the command scope to learn how the run ended — to 
 
 ### Usage Example
 
+This factory fragment assumes your app defines `ContextFactory`, `Context`, and `RunLog`, and calls `makeContext()` inside the command scope. `RunLog` must support capture by a `@Sendable` observer. Import `NnArgumentParser` and `Darwin` for the package API and stderr functions.
+
 ```swift
 struct DefaultFactory: ContextFactory {
     func makeContext() throws -> Context {

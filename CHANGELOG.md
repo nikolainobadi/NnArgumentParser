@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-25
+
+### Added
+
+- Add `NnCompletion.register(observer:)` and `NnRunOutcome` for observing command success or
+  failure, including the failure message and exit code. Observers run in registration order
+  before a failure is reported; clean exits count as success. Register within a command scope
+  and use `NnInterrupt.register(cleanup:)` for interrupted runs, which do not notify observers.
+- Notify completion observers in `testRun` and `testRunCapturingCleanups` before returning or
+  rethrowing, including on parse or validation failure when an observer has been registered.
+  Observer writes through `NnOutput.write(_:)` are included in captured output on successful runs.
+
 ## [1.1.0] - 2026-10-17
 
 ### Added
@@ -110,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.1...1.1.0
 [1.0.1]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/0.3.0...1.0.0

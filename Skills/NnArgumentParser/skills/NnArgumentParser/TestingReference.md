@@ -83,7 +83,9 @@ func `Interrupting a watch restores the terminal`() async throws {
 
 ## Testing completion observers
 
-There is no separate helper: register an observer that records into your test double, run the command with `testRun`, then assert on what it recorded. Requires NnArgumentParser 1.2.0 or later.
+There is no separate helper: have the command register an observer inside its run's scope that records into your injected test double, run the command with `testRun`, then assert on what it recorded. Registering before `testRun` is outside that fresh scope and does not attach an observer to the run. Requires NnArgumentParser 1.2.0 or later.
+
+The following fragment assumes `MyTool` registers an observer that records into `factory.runLog`, and its `release` command throws an error whose message is `build failed` and exit code is 1. The recorder captured by the `@Sendable` observer must be safe to share. Use `import Testing` and `import NnArgumentParserTesting` in the test file.
 
 ```swift
 @Test
@@ -98,7 +100,9 @@ func `A failed release tells the run log it failed`() async throws {
 }
 ```
 
-A validation failure is thrown wrapped in ArgumentParser's own error type, so expect `(any Error).self` rather than `ValidationError.self`.
+A validation failure is thrown wrapped in ArgumentParser's own error type, so expect `(any Error).self` rather than `ValidationError.self`. To observe it, register in `validate()` before throwing; an observer registered only in `run()` cannot see a parse or validation failure.
+
+The helpers rethrow even when the observer receives `.succeeded` for a thrown `CleanExit` or `ExitCode.success`. Assert on the thrown error separately; a successful outcome classification does not make captured output or cleanups available for a throwing run.
 
 <!-- type:MockCommandInspector -->
 ## Workflow stage mocks
