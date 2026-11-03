@@ -57,6 +57,10 @@ changelog, so a release cut without the rename silently ships an empty entry.
   inspector `inspect()`, and resolver `resolve(context:)` are async; collection and interpretation
   remain synchronous. `NnWorkflowCommand` runs the workflow with a dispatch-backed task executor
   preference to accommodate blocking stages.
+- `NnTrackedInspector(base:track:)` wraps a workflow inspector for progress reporting without
+  adding a progress dependency to the package or changing the base inspector. The async throwing
+  `track` closure receives the inspection work; call it once and return its facts. The wrapper
+  does not enforce that call count, and errors thrown by `track` propagate to the caller.
 - Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
   The root's `main()` installs the production scope; `testRun` installs one per run. State survives
   `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering

@@ -8,7 +8,7 @@ user-invocable: true
 
 A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift-argument-parser) that adds a dependency-injection seam for command-line tools, so commands and subcommands get their dependencies from an injectable factory and can be tested without global mutable state.
 
-**Dependency:** `.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.2.0")`
+**Dependency:** `.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.3.0")`
 **Platforms:** macOS 15+ | **Swift:** 6.2 | **Depends on:** swift-argument-parser 1.8.2+
 
 This skill lives in the package repo it documents (`Skills/NnArgumentParser`), so an API change and its
@@ -19,7 +19,7 @@ documentation land in the same PR.
 | File | Purpose | Load When |
 |------|---------|-----------|
 | `ApiReference.md` | `NnRootCommand` protocol, the `contextFactory` injection seam, `InteractionMode` / `InteractivityOptions`, `NnOutput` / `NnOutputWriter`, `NnInterrupt`, `NnCompletion` / `NnRunOutcome`, and the re-exported ArgumentParser surface | Building a CLI root command, wiring the factory, `defaultFactory` vs `contextFactory`, suppressing prompts, routing output, cleaning up on interrupt, observing how a run ended |
-| `WorkflowReference.md` | `NnWorkflow` and its five stage protocols, `NnInspection`, `NnRequirement`, `NnWorkflowError`, the passthrough stages, `NnTrackedInspector`, `NnWorkflowCommand`, and what each stage may and may not do | Structuring a command's `run()` as inspect → collect → resolve, asking only for missing input, wiring a workflow in `makeWorkflow()` |
+| `WorkflowReference.md` | `NnWorkflow` and its five stage protocols, `NnInspection`, `NnRequirement`, `NnWorkflowError`, the passthrough stages, `NnTrackedInspector`, `NnWorkflowCommand`, and what each stage may and may not do | Structuring a command's `run()` as inspect → collect → resolve, asking only for missing input, wiring a workflow in `makeWorkflow()`, showing progress during inspection |
 | `TestingReference.md` | `testRun(contextFactory:args:interactionMode:)`, `testRunCapturingCleanups` / `NnTestRunResult`, the command-testing pattern (inject a mock factory, run, assert on outcomes), `withIsolatedState`, the workflow stage mocks, and the `knownValue` / `unknownInfo` requirement accessors | Writing tests that drive whole commands end-to-end, testing the interactivity flags, testing interrupt cleanups, testing a workflow's stages, or asserting on an interpreter's requirements |
 
 ## Quick Reference
@@ -89,6 +89,7 @@ documentation land in the same PR.
 - "How do I only prompt for values the user didn't pass as flags?" -> Loads WorkflowReference.md
 - "What's the difference between findings and requirements?" -> Loads WorkflowReference.md
 - "My command has nothing to ask. Do I need a collector?" -> Loads WorkflowReference.md
+- "How do I show progress while my inspector runs?" -> Loads WorkflowReference.md
 - "Why am I getting NnWorkflowError.missingAnswer?" -> Loads WorkflowReference.md
 - "How do I test a workflow's interpreters and resolver?" -> Loads TestingReference.md
 - "How do I test a command end-to-end?" -> Loads TestingReference.md

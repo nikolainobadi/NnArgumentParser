@@ -7,6 +7,7 @@
       ],
       "name" : "NnArgumentParser",
       "path" : ".",
+      "skill" : "Skills/NnArgumentParser",
       "targetType" : "library"
     }
   ]

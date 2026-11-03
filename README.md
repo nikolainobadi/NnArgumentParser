@@ -33,6 +33,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
 - **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and resolution; `NnWorkflowCommand` provides async command execution
+- **Inspection progress** — `NnTrackedInspector` wraps an inspector with a caller-provided async closure for reporting progress
 - **ArgumentParser re-export** — one import gets you both
 
 ## Requirements
@@ -45,7 +46,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.2.0")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "1.3.0")
 ```
 
 Then add the product to your target:
