@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `NnTrackedInspector` for showing progress during inspection without the inspector knowing
+  about it. It wraps any `NnCommandInspector` and runs its `inspect()` inside a `track` closure,
+  so the package gains no progress dependency.
+
 ## [1.2.0] - 2026-10-25
 
 ### Added
