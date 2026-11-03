@@ -31,9 +31,6 @@ until the migration, a gap nothing detected.
 
 - **A PR changing the public API must also touch `Skills/`.** No PR workflow currently enforces
   this, so verify the source and skill changes together in the diff.
-- **`Skills/NnArgumentParser/.claude-plugin/plugin.json` deliberately has no `version` field.**
-  Do not reintroduce one. Git-based sources are cached by commit sha, so a hand-typed version number
-  is a second source of truth that nothing verifies — exactly the staleness this layout removes.
 - **Keep `Skills/.../manifest.json` current** when adding or removing a public type: it records the
   sha, tag, per-file hashes, and the type-to-document map used to detect drift.
 - **`Skills/` is invisible to SwiftPM.** It is not a target path; `swift build` ignores it. Verify
