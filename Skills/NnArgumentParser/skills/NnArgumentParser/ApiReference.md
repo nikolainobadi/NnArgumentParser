@@ -6,7 +6,6 @@ API for building testable command-line tools on top of Apple's ArgumentParser.
 
 ---
 
-<!-- type:NnRootCommand -->
 ## Protocol: NnRootCommand
 
 The entry-point protocol for a CLI's root command. Refines `AsyncParsableCommand` and adds a dependency-injection seam.
@@ -75,11 +74,9 @@ struct Greet: ParsableCommand {
     }
 }
 ```
-<!-- /type:NnRootCommand -->
 
 ---
 
-<!-- type:InteractionMode -->
 ## Enum: InteractionMode
 
 Whether a command may prompt the user for input. Decided once at the composition root instead of at every prompt.
@@ -138,11 +135,9 @@ func makePicker() -> any Picker {
     }
 }
 ```
-<!-- /type:InteractionMode -->
 
 ---
 
-<!-- type:InteractivityOptions -->
 ## Struct: InteractivityOptions
 
 An `@OptionGroup` that exposes the interactivity flags on a command and registers the resolved mode.
@@ -211,11 +206,9 @@ struct AddUser: ParsableCommand {
     }
 }
 ```
-<!-- /type:InteractivityOptions -->
 
 ---
 
-<!-- type:CaseInsensitiveArgument -->
 ## Protocol: CaseInsensitiveArgument
 
 A marker protocol that makes an `ExpressibleByArgument` enum parse regardless of letter case.
@@ -266,11 +259,9 @@ struct Discard: ParsableCommand {
     var scope: DiscardScope = .both
 }
 ```
-<!-- /type:CaseInsensitiveArgument -->
 
 ---
 
-<!-- type:KeyValueArgument -->
 ## Struct: KeyValueArgument
 
 A `<key>=<value>` pair, so one repeatable option can carry a setting per key.
@@ -316,11 +307,9 @@ struct BuildCommandOptions: ParsableArguments {
     }
 }
 ```
-<!-- /type:KeyValueArgument -->
 
 ---
 
-<!-- type:NnOutput -->
 ## Output: NnOutput and NnOutputWriter
 
 ```swift
@@ -339,11 +328,9 @@ Use `NnOutput.write` for command reports that tests need to capture. It prints a
 To route production output to a log or display, call `NnOutput.register(writer:)` inside the command scope before writing. Registration outside a scope traps. A writer receives text without an added newline and must terminate the line itself, deliver the text before returning, preserve call order, and be safe for concurrent calls. A `testRun` buffer takes precedence over a registered writer.
 
 Once the current production run is interrupting, `NnOutput.write` drops output before reaching either the writer or stdout, so ongoing work does not write into a display being torn down. A write outside any scope falls back to stdout.
-<!-- /type:NnOutput -->
 
 ---
 
-<!-- type:NnInterrupt -->
 ## Interrupt cleanup: NnInterrupt
 
 ```swift
@@ -357,11 +344,9 @@ Register terminal restoration or child-process teardown inside the command scope
 The root's async `main()` installs the signal handling. On interrupt it runs the registered cleanups, writes `Interrupted.` to stderr, and terminates by the signal. Once interruption starts, the command's own error is suppressed. A second interrupt terminates immediately rather than waiting for cleanup. Code that replaces the signal handlers must restore the installed handlers for interruption to keep working.
 
 `testRun` installs no signal handling and never executes these cleanups; it discards registrations with the run. To test a cleanup, use `testRunCapturingCleanups` from `NnArgumentParserTesting`, which returns the run's cleanups for the test to call — see `TestingReference.md`.
-<!-- /type:NnInterrupt -->
 
 ---
 
-<!-- type:NnCompletion -->
 ## Completion: NnCompletion and NnRunOutcome
 
 Requires NnArgumentParser 1.2.0 or later.
@@ -411,7 +396,6 @@ struct DefaultFactory: ContextFactory {
 ```
 
 `testRun` and `testRunCapturingCleanups` notify observers too — see `TestingReference.md`.
-<!-- /type:NnCompletion -->
 
 ---
 

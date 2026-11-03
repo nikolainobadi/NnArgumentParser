@@ -6,7 +6,6 @@ Utilities from the `NnArgumentParserTesting` module for driving whole commands i
 
 ---
 
-<!-- type:testRun -->
 ## Method: testRun(contextFactory:args:interactionMode:)
 
 Runs a root command end-to-end in a test and returns its captured `NnOutput.write` output.
@@ -36,9 +35,7 @@ extension NnRootCommand {
 - The scope is discarded on return or throw. There is no mode to reset afterward.
 - Installs no signal handlers. `NnInterrupt` cleanups registered during the run are discarded without being executed. To test them, use `testRunCapturingCleanups`.
 - Notifies `NnCompletion` observers with the run's outcome, including a parse failure, before returning or rethrowing. An observer's `NnOutput.write` output is in the returned string only when the run succeeds; on failure the error is rethrown and the captured output is discarded.
-<!-- /type:testRun -->
 
-<!-- type:testRunCapturingCleanups -->
 ## Method: testRunCapturingCleanups(contextFactory:args:interactionMode:)
 
 Runs a root command exactly like `testRun`, and also returns the interrupt cleanups it registered with `NnInterrupt.register(cleanup:)`. Requires NnArgumentParser 1.0.1 or later.
@@ -79,7 +76,6 @@ func `Interrupting a watch restores the terminal`() async throws {
     #expect(factory.terminal.wasRestored)
 }
 ```
-<!-- /type:testRunCapturingCleanups -->
 
 ## Testing completion observers
 
@@ -104,7 +100,6 @@ A validation failure is thrown wrapped in ArgumentParser's own error type, so ex
 
 The helpers rethrow even when the observer receives `.succeeded` for a thrown `CleanExit` or `ExitCode.success`. Assert on the thrown error separately; a successful outcome classification does not make captured output or cleanups available for a throwing run.
 
-<!-- type:MockCommandInspector -->
 ## Workflow stage mocks
 
 Test doubles for the three side-effecting `NnWorkflow` stages. All are `final class`es that record what they received and return a canned value. Pass `throwError: true` to make the stage throw `MockWorkflowError.stageFailed` instead.
@@ -175,9 +170,7 @@ private struct TestWorkflow: NnWorkflow {
 ```
 
 To stop a run at a given stage, pass `throwError: true` and assert with `await #expect(throws: MockWorkflowError.stageFailed) { try await sut.run() }`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
-<!-- /type:MockCommandInspector -->
 
-<!-- type:knownValue -->
 ## Asserting on requirements
 
 Test accessors that pull the case out of an `NnRequirement`, for asserting on what an inspection interpreter decided. Requires NnArgumentParser 1.1.0 or later.
@@ -217,7 +210,6 @@ func `A passed version is known`() throws {
 ```
 
 For `Void` info, check whether the requirement is unknown with `#expect(requirement.unknownInfo != nil)`.
-<!-- /type:knownValue -->
 
 ## Choose the test interaction mode explicitly
 
@@ -241,7 +233,6 @@ func `Prompts when a terminal is available`() async throws {
 }
 ```
 
-<!-- type:withIsolatedState -->
 ## Isolated state without running a command
 
 `withIsolatedState(_:)` creates a fresh command scope for a synchronous or async closure. Use it when testing a factory accessor, registering a mode or output writer, or parsing a command with `InteractivityOptions` directly. `MyTool.withIsolatedState(contextFactory:_:)` also injects a factory; `contextFactory` cannot be assigned by package consumers.
@@ -260,7 +251,6 @@ func registeredModeIsVisible() {
 ```
 
 The scope follows `await` and is inherited by task-group children and `Task { }`, but not `Task.detached`. Reading `contextFactory` or registering state without a scope traps. `InteractionMode.current` alone can be read outside a scope and falls back to environment and terminal resolution. These helpers do not install output capture or signal handling.
-<!-- /type:withIsolatedState -->
 
 ## The command-testing pattern
 

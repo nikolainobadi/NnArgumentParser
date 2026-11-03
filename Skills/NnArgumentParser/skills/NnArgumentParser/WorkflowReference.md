@@ -22,7 +22,6 @@ Decisions belong in the two interpreters. Keep them out of the inspector and the
 
 ---
 
-<!-- type:NnWorkflow -->
 ## Protocol: NnWorkflow
 
 Groups the five stages and ties their types together, so a mismatched stage fails to compile.
@@ -99,11 +98,9 @@ struct PublishWorkflow: NnWorkflow {
     let resolver: PublishResolver
 }
 ```
-<!-- /type:NnWorkflow -->
 
 ---
 
-<!-- type:NnCommandInspector -->
 ## Protocol: NnCommandInspector
 
 ```swift
@@ -120,11 +117,9 @@ public protocol NnCommandInspector {
 ```swift
 extension ProjectInspector: @retroactive NnCommandInspector { }
 ```
-<!-- /type:NnCommandInspector -->
 
 ---
 
-<!-- type:NnInspectionInterpreter -->
 ## Protocol: NnInspectionInterpreter
 
 ```swift
@@ -139,9 +134,7 @@ public protocol NnInspectionInterpreter {
 
 - Throws when a fact rules the command out, for example when the directory isn't a git repository or a required config is missing.
 - Command-line input reaches this stage through the interpreter's initializer. A value the caller passed makes its requirement `.known`, and an omitted value makes it `.unknown`.
-<!-- /type:NnInspectionInterpreter -->
 
-<!-- type:NnInspection -->
 ## Struct: NnInspection
 
 What the inspection interpreter learned (`findings`) and what it still needs (`requirements`).
@@ -154,11 +147,9 @@ public struct NnInspection<Findings: Sendable, Requirements: Sendable>: Sendable
     public init(findings: Findings, requirements: Requirements)
 }
 ```
-<!-- /type:NnInspection -->
 
 ---
 
-<!-- type:NnCommandCollector -->
 ## Protocol: NnCommandCollector
 
 ```swift
@@ -173,11 +164,9 @@ public protocol NnCommandCollector {
 - **Ask only for unknown requirements.** Call `requirement.ask(prompt)` for each field. It prompts only when the requirement is `.unknown` and returns `nil` when it's known.
 - **`Answers` holds only what the user answered.** Each field is optional and is `nil` when its requirement was already known. Turning a requirement and its answer back into a value is the collection interpreter's job, through `resolve(answer:)`.
 - **The collector doesn't check interactivity.** It prompts through whatever picker the factory vended. In non-interactive mode, that's a non-interactive picker that answers or throws.
-<!-- /type:NnCommandCollector -->
 
 ---
 
-<!-- type:NnCollectionInterpreter -->
 ## Protocol: NnCollectionInterpreter
 
 ```swift
@@ -193,11 +182,9 @@ public protocol NnCollectionInterpreter {
 
 - Resolves each requirement with its answer (`try requirements.version.resolve(answer: answers.version)`), validates what the user typed, and builds the resolver's `Context`.
 - `Context` should carry everything the resolver needs, so the resolver never reads facts or requirements directly.
-<!-- /type:NnCollectionInterpreter -->
 
 ---
 
-<!-- type:NnCommandResolver -->
 ## Protocol: NnCommandResolver
 
 ```swift
@@ -211,11 +198,9 @@ public protocol NnCommandResolver {
 
 - Performs the side effects. Split large resolvers into use cases (`BuildProjectUseCase`, `PublishReleaseUseCase`, …) injected through `init`.
 - `Results` describes what happened, often as an enum (`.released`, `.prepared`, `.dryRun`). The resolver doesn't print it; `NnWorkflowCommand.handleResults(_:)` does.
-<!-- /type:NnCommandResolver -->
 
 ---
 
-<!-- type:NnRequirement -->
 ## Enum: NnRequirement
 
 One input the command needs, either already settled or still missing.
@@ -262,9 +247,7 @@ let target = try requirements.target.resolve(answer: selected)
 // With a non-Void Info, the closure receives it: `{ info in ... }`.
 let buildAndTest = try target.buildAndTest.ask { try buildAndTestPrompter.collect(target: target.target) }
 ```
-<!-- /type:NnRequirement -->
 
-<!-- type:NnWorkflowError -->
 ## Enum: NnWorkflowError
 
 ```swift
@@ -279,11 +262,9 @@ extension NnWorkflowError: LocalizedError {
 ```
 
 Thrown by `NnRequirement.resolve(answer:)` for an `.unknown` requirement with a `nil` answer. Getting this error means the collector skipped a requirement it should have asked about.
-<!-- /type:NnWorkflowError -->
 
 ---
 
-<!-- type:NnPassthroughCollector -->
 ## Passthrough stages
 
 For commands that have nothing to ask. Requirements and answers are both `Void`.
@@ -313,11 +294,49 @@ struct StatusWorkflow: NnWorkflow {
     let resolver: StatusResolver                              // Context == StatusFindings
 }
 ```
-<!-- /type:NnPassthroughCollector -->
 
 ---
 
-<!-- type:NnWorkflowCommand -->
+## Struct: NnTrackedInspector
+
+Wraps an inspector so a tool can show progress during inspection without the inspector knowing about it. Use it when inspection is slow enough that the command would otherwise look stalled. The `track` closure decides how progress is reported, so the inspector stays unchanged and the package needs no progress dependency.
+
+```swift
+public struct NnTrackedInspector<Base: NnCommandInspector>: NnCommandInspector {
+    public init(base: Base, track: @escaping (() async throws -> Base.Facts) async throws -> Base.Facts)
+    public func inspect() async throws -> Base.Facts
+}
+```
+
+Name the wrapper as the workflow's inspector type, and build it in `makeWorkflow()`:
+
+```swift
+struct StatusWorkflow: NnWorkflow {
+    let inspector: NnTrackedInspector<StatusInspector>
+    // other stages
+}
+
+inspector: .init(base: .init(gitClient: gitClient), track: { work in
+    reporter.start("Checking the repository")
+
+    do {
+        let facts = try await work()
+        reporter.finish(succeeded: true)
+
+        return facts
+    } catch {
+        reporter.finish(succeeded: false)
+        throw error
+    }
+}),
+```
+
+- The wrapper covers all of `inspect()`, so it reports one activity for the whole stage.
+- A fact recorded as missing, such as a failed fetch stored as `nil`, still returns normally, so `track` sees success. Only a thrown error reaches `track` as a failure.
+- The closure must call `work` exactly once and return its result. The type requires a return value, but nothing enforces the single call.
+
+---
+
 ## Protocol: NnWorkflowCommand
 
 An `AsyncParsableCommand` whose `run()` builds and runs a workflow, then hands the results back to the command.
@@ -372,7 +391,6 @@ extension MyTool {
     }
 }
 ```
-<!-- /type:NnWorkflowCommand -->
 
 ---
 

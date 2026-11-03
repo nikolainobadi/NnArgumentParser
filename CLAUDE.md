@@ -31,8 +31,6 @@ until the migration, a gap nothing detected.
 
 - **A PR changing the public API must also touch `Skills/`.** No PR workflow currently enforces
   this, so verify the source and skill changes together in the diff.
-- **Keep `Skills/.../manifest.json` current** when adding or removing a public type: it records the
-  sha, tag, per-file hashes, and the type-to-document map used to detect drift.
 - **`Skills/` is invisible to SwiftPM.** It is not a target path; `swift build` ignores it. Verify
   with `swift package describe --type json` if that ever seems in doubt.
 
@@ -41,36 +39,12 @@ until the migration, a gap nothing detected.
 Release preparation is configured in `.nnex/nnex.json` for the `NnArgumentParser` library target
 at `.`. Its commands are `swift build --build-tests` followed by `swift test --skip-build`.
 
-The marketplace entry is **pinned to a release tag**, not to `main`. Two consequences:
-
-- **Doc changes ship on release, not on merge.** Merging a correction to `Skills/` changes nothing
-  for readers until the next tag. This is the intended trade — the docs someone reads always match
-  a version they can actually depend on — but it surprises you if you just merged a fix.
-- **The pin must be bumped every release.** `.github/workflows/skill-ref-bump.yml` does this
-  automatically: on tag push it rewrites the `ref` in `nikolainobadi/nn-swift-skills` and opens a PR
-  there. It needs the repo secret **`MARKETPLACE_TOKEN`** (`contents:write` + `pull-requests:write`
-  on the marketplace repo).
-
-  That token is a fine-grained PAT named `nn-swift-skills-ref-bump`, scoped to `nn-swift-skills`
-  only, **expiring 2027-08-15**. It is **shared across every package repo** publishing to that
-  marketplace, not specific to this one — so rotating it means re-setting the secret in each of
-  them, and this repo is not the only place it lives.
-
-  When it expires the workflow fails loudly on tag push — a red X, not silence — so treat that
-  failure as "rotate the token", not "the workflow is broken". Regenerate it, then re-run
-  `gh secret set MARKETPLACE_TOKEN --repo <owner>/<package>` for every package repo using it.
-
 **`CHANGELOG.md` is updated before the tag, not after.** It follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/): entries accumulate under `Unreleased`
 during development, and cutting a release means renaming that heading to the version, dating it, and
 adding its comparison link at the bottom of the file. **Tags carry no `v` prefix** (`0.1.0`, not
 `v0.1.0`) — those links break if you add one. Nothing enforces any of this; no workflow checks the
 changelog, so a release cut without the rename silently ships an empty entry.
-
-**If that automation is ever removed or its token expires, the bump becomes manual.** Nothing errors
-and nothing warns when it is skipped — the marketplace simply keeps serving the previous release's
-documentation indefinitely. A silently stale pin is the one failure mode this layout does not fix on
-its own.
 
 ## Conventions
 
