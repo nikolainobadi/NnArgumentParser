@@ -5,7 +5,7 @@
 //  Created by Nikolai Nobadi on 10/12/26.
 //
 
-// What the inspection interpreter learned, and what it still needs before the resolver can run.
+// What the inspection interpreter learned, and what it still needs before the performer can run.
 public struct NnInspection<Findings: Sendable, Requirements: Sendable>: Sendable {
     public let findings: Findings
     public let requirements: Requirements

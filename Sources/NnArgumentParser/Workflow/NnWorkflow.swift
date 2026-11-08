@@ -7,12 +7,12 @@
 
 // MARK: - Workflow
 public protocol NnWorkflow {
-    associatedtype InspectorType: NnCommandInspector
+    associatedtype InspectorType: NnInspector
 
     associatedtype InspectionInterpreter: NnInspectionInterpreter
     where InspectionInterpreter.Facts == InspectorType.Facts
 
-    associatedtype CollectorType: NnCommandCollector
+    associatedtype CollectorType: NnCollector
     where CollectorType.Requirements == InspectionInterpreter.Requirements
 
     associatedtype CollectionInterpreter: NnCollectionInterpreter
@@ -20,30 +20,30 @@ public protocol NnWorkflow {
           CollectionInterpreter.Requirements == CollectorType.Requirements,
           CollectionInterpreter.Answers == CollectorType.Answers
 
-    associatedtype ResolverType: NnCommandResolver
-    where ResolverType.Context == CollectionInterpreter.Context
+    associatedtype PerformerType: NnPerformer
+    where PerformerType.Brief == CollectionInterpreter.Brief
 
     var inspector: InspectorType { get }
     var inspectionInterpreter: InspectionInterpreter { get }
     var collector: CollectorType { get }
     var collectionInterpreter: CollectionInterpreter { get }
-    var resolver: ResolverType { get }
+    var performer: PerformerType { get }
 }
 
 // MARK: - Run
 public extension NnWorkflow {
-    func run() async throws -> ResolverType.Results {
+    func run() async throws -> PerformerType.Results {
         let facts = try await inspector.inspect()
         let inspection = try inspectionInterpreter.interpret(facts: facts)
         let answers = try collector.collect(requirements: inspection.requirements)
-        let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
+        let brief = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
-        return try await resolver.resolve(context: context)
+        return try await performer.perform(brief: brief)
     }
 }
 
 // MARK: - Stages
-public protocol NnCommandInspector {
+public protocol NnInspector {
     associatedtype Facts: Sendable
 
     func inspect() async throws -> Facts
@@ -57,7 +57,7 @@ public protocol NnInspectionInterpreter {
     func interpret(facts: Facts) throws -> NnInspection<Findings, Requirements>
 }
 
-public protocol NnCommandCollector {
+public protocol NnCollector {
     associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
 
@@ -68,14 +68,14 @@ public protocol NnCollectionInterpreter {
     associatedtype Findings: Sendable
     associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
-    associatedtype Context: Sendable
+    associatedtype Brief: Sendable
 
-    func interpret(findings: Findings, requirements: Requirements, answers: Answers) throws -> Context
+    func interpret(findings: Findings, requirements: Requirements, answers: Answers) throws -> Brief
 }
 
-public protocol NnCommandResolver {
-    associatedtype Context: Sendable
+public protocol NnPerformer {
+    associatedtype Brief: Sendable
     associatedtype Results: Sendable
 
-    func resolve(context: Context) async throws -> Results
+    func perform(brief: Brief) async throws -> Results
 }

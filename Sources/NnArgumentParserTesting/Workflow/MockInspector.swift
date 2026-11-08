@@ -1,5 +1,5 @@
 //
-//  MockCommandInspector.swift
+//  MockInspector.swift
 //  NnArgumentParser
 //
 //  Created by Nikolai Nobadi on 10/12/26.
@@ -7,7 +7,7 @@
 
 import NnArgumentParser
 
-public final class MockCommandInspector<Facts: Sendable> {
+public final class MockInspector<Facts: Sendable> {
     private let facts: Facts
     private let throwError: Bool
 
@@ -19,8 +19,8 @@ public final class MockCommandInspector<Facts: Sendable> {
     }
 }
 
-// MARK: - NnCommandInspector
-extension MockCommandInspector: NnCommandInspector {
+// MARK: - NnInspector
+extension MockInspector: NnInspector {
     public func inspect() throws -> Facts {
         inspectCallCount += 1
 

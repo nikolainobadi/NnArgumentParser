@@ -12,7 +12,7 @@ import NnArgumentParserTesting
 
 struct NnWorkflowCommandTests {
     @Test
-    func `A workflow command hands the resolver's results to the command`() async throws {
+    func `A workflow command hands the performer's results to the command`() async throws {
         let output = try await BarrierCommand.testRun(contextFactory: 1, args: [], interactionMode: .nonInteractive(assumeYes: false))
 
         #expect(output == "all 1 children ran concurrently")
@@ -39,7 +39,7 @@ private struct BarrierCommand: NnRootCommand, NnWorkflowCommand {
             inspectionInterpreter: .init(),
             collector: .init(),
             collectionInterpreter: .init(),
-            resolver: .init()
+            performer: .init()
         )
     }
 
@@ -53,10 +53,10 @@ private struct BarrierWorkflow: NnWorkflow {
     let inspectionInterpreter: ChildCountInterpreter
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<Int>
-    let resolver: BarrierResolver
+    let performer: BarrierPerformer
 }
 
-private struct ChildCountInspector: NnCommandInspector {
+private struct ChildCountInspector: NnInspector {
     let childCount: Int
 
     func inspect() -> Int {
@@ -70,8 +70,8 @@ private struct ChildCountInterpreter: NnInspectionInterpreter {
     }
 }
 
-private struct BarrierResolver: NnCommandResolver {
-    func resolve(context childCount: Int) async throws -> String {
+private struct BarrierPerformer: NnPerformer {
+    func perform(brief childCount: Int) async throws -> String {
         let barrier = Barrier(count: childCount)
         let arrivals = await withTaskGroup(of: Bool.self) { group in
             for _ in 0..<childCount {

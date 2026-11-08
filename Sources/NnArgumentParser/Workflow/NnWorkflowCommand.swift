@@ -11,7 +11,7 @@ public protocol NnWorkflowCommand: AsyncParsableCommand {
     associatedtype Workflow: NnWorkflow
 
     func makeWorkflow() throws -> Workflow
-    func handleResults(_ results: Workflow.ResolverType.Results) throws
+    func handleResults(_ results: Workflow.PerformerType.Results) throws
 }
 
 public extension NnWorkflowCommand {

@@ -11,7 +11,7 @@ import NnArgumentParserTesting
 struct NnTrackedInspectorTests {
     @Test
     func `Inspect returns the base inspector's facts`() async throws {
-        let base = MockCommandInspector(facts: "facts", throwError: false)
+        let base = MockInspector(facts: "facts", throwError: false)
         let sut = NnTrackedInspector(base: base, track: passthrough)
 
         let facts = try await sut.inspect()
@@ -22,7 +22,7 @@ struct NnTrackedInspectorTests {
 
     @Test
     func `The track closure surrounds the base inspection`() async throws {
-        let base = MockCommandInspector(facts: "facts", throwError: false)
+        let base = MockInspector(facts: "facts", throwError: false)
         var callCountBeforeWork: Int?
         var callCountAfterWork: Int?
         let sut = NnTrackedInspector(base: base, track: { work in
@@ -41,7 +41,7 @@ struct NnTrackedInspectorTests {
 
     @Test
     func `A base inspector's error reaches the caller`() async {
-        let base = MockCommandInspector(facts: "facts", throwError: true)
+        let base = MockInspector(facts: "facts", throwError: true)
         var capturedError: Error?
         let sut = NnTrackedInspector(base: base, track: { work in
             do {
@@ -60,8 +60,8 @@ struct NnTrackedInspectorTests {
 
     @Test
     func `A track closure that throws before starting work skips the base`() async {
-        let base = MockCommandInspector(facts: "facts", throwError: false)
-        let sut = NnTrackedInspector<MockCommandInspector<String>>(base: base, track: { _ in
+        let base = MockInspector(facts: "facts", throwError: false)
+        let sut = NnTrackedInspector<MockInspector<String>>(base: base, track: { _ in
             throw TrackError.notStarted
         })
 
@@ -73,20 +73,20 @@ struct NnTrackedInspectorTests {
 
     @Test
     func `A workflow runs with a tracked inspector`() async throws {
-        let base = MockCommandInspector(facts: "facts", throwError: false)
-        let resolver = MockCommandResolver<String, String>(results: "results", throwError: false)
+        let base = MockInspector(facts: "facts", throwError: false)
+        let performer = MockPerformer<String, String>(results: "results", throwError: false)
         let sut = TrackedWorkflow(
             inspector: .init(base: base, track: passthrough),
             inspectionInterpreter: .init(),
             collector: .init(),
             collectionInterpreter: .init(),
-            resolver: resolver
+            performer: performer
         )
 
         let results = try await sut.run()
 
         #expect(results == "results")
-        #expect(resolver.capturedContexts == ["facts"])
+        #expect(performer.capturedBriefs == ["facts"])
     }
 }
 
@@ -107,9 +107,9 @@ private struct FactsAsFindingsInterpreter: NnInspectionInterpreter {
 }
 
 private struct TrackedWorkflow: NnWorkflow {
-    let inspector: NnTrackedInspector<MockCommandInspector<String>>
+    let inspector: NnTrackedInspector<MockInspector<String>>
     let inspectionInterpreter: FactsAsFindingsInterpreter
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<String>
-    let resolver: MockCommandResolver<String, String>
+    let performer: MockPerformer<String, String>
 }
