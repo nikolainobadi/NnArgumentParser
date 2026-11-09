@@ -102,6 +102,8 @@ The helpers rethrow even when the observer receives `.succeeded` for a thrown `C
 
 ## Workflow stage mocks
 
+Requires NnArgumentParser 2.0.0 or later for the mock types shown here.
+
 Test doubles for the three side-effecting `NnWorkflow` stages. All are `final class`es that record what they received and return a canned value. Pass `throwError: true` to make the stage throw `MockWorkflowError.stageFailed` instead.
 
 ```swift

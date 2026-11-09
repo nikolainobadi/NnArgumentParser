@@ -4,6 +4,8 @@ API for structuring a command's `run()` as a typed pipeline: **inspect → inter
 
 **Import:** `import NnArgumentParser`
 
+Requires NnArgumentParser 2.0.0 or later for the workflow interfaces shown here.
+
 ---
 
 ## Stage semantics
@@ -299,7 +301,7 @@ struct StatusWorkflow: NnWorkflow {
 
 ## Struct: NnTrackedInspector
 
-Requires NnArgumentParser 1.3.0 or later.
+Requires NnArgumentParser 2.0.0 or later for the `NnInspector`-based interface shown below.
 
 Wraps an inspector so a tool can show progress during inspection without the inspector knowing about it. Use it when inspection is slow enough that the command would otherwise look stalled. The `track` closure decides how progress is reported, so the inspector stays unchanged and the package needs no progress dependency.
 

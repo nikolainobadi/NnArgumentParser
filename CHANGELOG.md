@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-09
+
+### Changed
+
+- Rename `NnCommandInspector` to `NnInspector` and `NnCommandCollector` to `NnCollector`.
+  Update workflow stage conformances and explicit type references (breaking).
+- Replace `NnCommandResolver` with `NnPerformer`, using `Brief` instead of `Context` and
+  `perform(brief:)` instead of `resolve(context:)`. Rename workflow `ResolverType` and `resolver`
+  to `PerformerType` and `performer`, and update explicit result types in `handleResults(_:)`
+  to use `Workflow.PerformerType.Results` (breaking).
+- Rename `NnCollectionInterpreter.Context` to `Brief`, including the associated type exposed by
+  `NnPassthroughCollectionInterpreter`. Update explicit associated type declarations and references
+  in collection interpreters (breaking).
+- Rename the testing helpers `MockCommandInspector`, `MockCommandCollector`, and
+  `MockCommandResolver` to `MockInspector`, `MockCollector`, and `MockPerformer`. Update test
+  references, replace `capturedContexts` assertions with `capturedBriefs`, and use `perform(brief:)`
+  for direct performer calls (breaking).
+
 ## [1.3.0] - 2026-11-03
 
 ### Added
@@ -130,7 +148,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.3.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.3.0...2.0.0
 [1.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.0.1...1.1.0

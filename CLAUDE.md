@@ -7,7 +7,7 @@ suppressing prompts in automated contexts, and composable command workflows.
 - `Sources/NnArgumentParser` — the library. `Arguments/`, `Completion/`, `Exports/`, `Interactivity/`,
   `Interrupt/`, `Output/`, `RootCommand/`, `Storage/`, and `Workflow/` organize its APIs and
   command-scoped state; `NnWorkflow` composes inspect, interpret,
-  collect, interpret, and resolve stages, while `NnWorkflowCommand` adapts a workflow to a command.
+  collect, interpret, and perform stages, while `NnWorkflowCommand` adapts a workflow to a command.
 - `Sources/NnArgumentParserTesting` — async `testRun` for driving whole commands in tests,
   `withIsolatedState` for scoped state access, and workflow stage mocks for exercising pipeline wiring.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
@@ -54,7 +54,7 @@ changelog, so a release cut without the rename silently ships an empty entry.
   `NnArgumentParserTesting` likewise does `@_exported import NnArgumentParser`, so test files need
   only `import NnArgumentParserTesting`.
 - `NnRootCommand` and `NnWorkflowCommand` conform to `AsyncParsableCommand`. Workflow `run()`,
-  inspector `inspect()`, and resolver `resolve(context:)` are async; collection and interpretation
+  inspector `inspect()`, and performer `perform(brief:)` are async; collection and interpretation
   remain synchronous. `NnWorkflowCommand` runs the workflow with a dispatch-backed task executor
   preference to accommodate blocking stages.
 - `NnTrackedInspector(base:track:)` wraps a workflow inspector for progress reporting without
