@@ -1,6 +1,6 @@
 # NnArgumentParser Workflow Reference
 
-API for structuring a command's `run()` as a typed pipeline: **inspect → interpret → collect → interpret → resolve**.
+API for structuring a command's `run()` as a typed pipeline: **inspect → interpret → collect → interpret → perform**.
 
 **Import:** `import NnArgumentParser`
 
@@ -12,11 +12,11 @@ Each stage has one job. The protocols enforce the data flow between stages; thes
 
 | Stage | Protocol | Job | May prompt? |
 |-------|----------|-----|-------------|
-| **Inspect** | `NnCommandInspector` | Checks the command can run: tools installed, config files present, repository state. Gathers **facts only** and makes no decisions. | No |
+| **Inspect** | `NnInspector` | Checks the command can run: tools installed, config files present, repository state. Gathers **facts only** and makes no decisions. | No |
 | **Interpret inspection** | `NnInspectionInterpreter` | Turns facts (plus command-line input) into **findings**, meaning what is settled, and **requirements**, meaning what is still missing. Throws when the command can't run. | No |
-| **Collect** | `NnCommandCollector` | Prompts for the **missing** information the command needs before it can start. Optional: a command with nothing missing uses `NnPassthroughCollector`. | Yes, but only for unknown requirements |
-| **Interpret collection** | `NnCollectionInterpreter` | Combines findings, requirements, and answers into the resolver's **context**. Validates answers. | No |
-| **Resolve** | `NnCommandResolver` | Does the work. Usually the largest stage, so it's split into use cases. Returns **results**. | Only for *additional* information that comes up during the work, never for what Collect exists to gather |
+| **Collect** | `NnCollector` | Prompts for the **missing** information the command needs before it can start. Optional: a command with nothing missing uses `NnPassthroughCollector`. | Yes, but only for unknown requirements |
+| **Interpret collection** | `NnCollectionInterpreter` | Combines findings, requirements, and answers into the performer's **brief**. Validates answers. | No |
+| **Perform** | `NnPerformer` | Does the work. Usually the largest stage, so it's split into use cases. Returns **results**. | Only for *additional* information that comes up during the work, never for what Collect exists to gather |
 
 Decisions belong in the two interpreters. Keep them out of the inspector and the collector. If the inspector chooses between options or the collector decides whether to ask, the pipeline's separation is lost.
 
@@ -28,12 +28,12 @@ Groups the five stages and ties their types together, so a mismatched stage fail
 
 ```swift
 public protocol NnWorkflow {
-    associatedtype InspectorType: NnCommandInspector
+    associatedtype InspectorType: NnInspector
 
     associatedtype InspectionInterpreter: NnInspectionInterpreter
     where InspectionInterpreter.Facts == InspectorType.Facts
 
-    associatedtype CollectorType: NnCommandCollector
+    associatedtype CollectorType: NnCollector
     where CollectorType.Requirements == InspectionInterpreter.Requirements
 
     associatedtype CollectionInterpreter: NnCollectionInterpreter
@@ -41,18 +41,18 @@ public protocol NnWorkflow {
           CollectionInterpreter.Requirements == CollectorType.Requirements,
           CollectionInterpreter.Answers == CollectorType.Answers
 
-    associatedtype ResolverType: NnCommandResolver
-    where ResolverType.Context == CollectionInterpreter.Context
+    associatedtype PerformerType: NnPerformer
+    where PerformerType.Brief == CollectionInterpreter.Brief
 
     var inspector: InspectorType { get }
     var inspectionInterpreter: InspectionInterpreter { get }
     var collector: CollectorType { get }
     var collectionInterpreter: CollectionInterpreter { get }
-    var resolver: ResolverType { get }
+    var performer: PerformerType { get }
 }
 
 public extension NnWorkflow {
-    func run() async throws -> ResolverType.Results
+    func run() async throws -> PerformerType.Results
 }
 ```
 
@@ -62,9 +62,9 @@ public extension NnWorkflow {
 let facts = try await inspector.inspect()
 let inspection = try inspectionInterpreter.interpret(facts: facts)
 let answers = try collector.collect(requirements: inspection.requirements)
-let context = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
+let brief = try collectionInterpreter.interpret(findings: inspection.findings, requirements: inspection.requirements, answers: answers)
 
-return try await resolver.resolve(context: context)
+return try await performer.perform(brief: brief)
 ```
 
 ### Type flow
@@ -76,15 +76,15 @@ Inspector ──Facts──▶ InspectionInterpreter ──NnInspection<Findings
         ▼                                                                          │
     Collector ──Answers──▶ CollectionInterpreter(findings, requirements, answers) ◀┘
                                      │
-                                  Context
+                                   Brief
                                      ▼
-                                 Resolver ──▶ Results
+                                 Performer ──▶ Results
 ```
 
 ### Behavioral Notes
 
-- **Inspection and resolution are async.** Call the workflow with `try await`; collectors and both interpreters remain synchronous. A synchronous implementation can still satisfy an async stage requirement.
-- **The first error stops the run.** Each stage is called with `try`. A throwing inspector means the collector never runs, and a throwing collector means the resolver never runs.
+- **The inspector and performer are async.** Call the workflow with `try await`; collectors and both interpreters remain synchronous. A synchronous implementation can still satisfy an async stage requirement.
+- **The first error stops the run.** Each stage is called with `try`. A throwing inspector means the collector never runs, and a throwing collector means the performer never runs.
 - **The collector is always called.** `run()` doesn't check whether anything is missing, so the collector must skip requirements that are already known. `NnRequirement.ask(_:)` handles this.
 - **Findings skip the collector.** They go straight from the inspection interpreter to the collection interpreter, so the collector sees only what it has to ask about.
 - **Conform with a plain struct of five `let`s.** The associated types are inferred from the property types:
@@ -95,16 +95,16 @@ struct PublishWorkflow: NnWorkflow {
     let inspectionInterpreter: PublishInspectionInterpreter
     let collector: PublishCollector
     let collectionInterpreter: PublishCollectionInterpreter
-    let resolver: PublishResolver
+    let performer: PublishPerformer
 }
 ```
 
 ---
 
-## Protocol: NnCommandInspector
+## Protocol: NnInspector
 
 ```swift
-public protocol NnCommandInspector {
+public protocol NnInspector {
     associatedtype Facts: Sendable
 
     func inspect() async throws -> Facts
@@ -115,7 +115,7 @@ public protocol NnCommandInspector {
 - **Retroactive conformance works.** An inspector defined in a library module that already has a matching `inspect() async throws -> Facts` can adopt the protocol with an empty extension in the executable:
 
 ```swift
-extension ProjectInspector: @retroactive NnCommandInspector { }
+extension ProjectInspector: @retroactive NnInspector { }
 ```
 
 ---
@@ -150,10 +150,10 @@ public struct NnInspection<Findings: Sendable, Requirements: Sendable>: Sendable
 
 ---
 
-## Protocol: NnCommandCollector
+## Protocol: NnCollector
 
 ```swift
-public protocol NnCommandCollector {
+public protocol NnCollector {
     associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
 
@@ -174,30 +174,30 @@ public protocol NnCollectionInterpreter {
     associatedtype Findings: Sendable
     associatedtype Requirements: Sendable
     associatedtype Answers: Sendable
-    associatedtype Context: Sendable
+    associatedtype Brief: Sendable
 
-    func interpret(findings: Findings, requirements: Requirements, answers: Answers) throws -> Context
+    func interpret(findings: Findings, requirements: Requirements, answers: Answers) throws -> Brief
 }
 ```
 
-- Resolves each requirement with its answer (`try requirements.version.resolve(answer: answers.version)`), validates what the user typed, and builds the resolver's `Context`.
-- `Context` should carry everything the resolver needs, so the resolver never reads facts or requirements directly.
+- Resolves each requirement with its answer (`try requirements.version.resolve(answer: answers.version)`), validates what the user typed, and builds the performer's `Brief`.
+- `Brief` should carry everything the performer needs, so the performer never reads facts or requirements directly.
 
 ---
 
-## Protocol: NnCommandResolver
+## Protocol: NnPerformer
 
 ```swift
-public protocol NnCommandResolver {
-    associatedtype Context: Sendable
+public protocol NnPerformer {
+    associatedtype Brief: Sendable
     associatedtype Results: Sendable
 
-    func resolve(context: Context) async throws -> Results
+    func perform(brief: Brief) async throws -> Results
 }
 ```
 
-- Performs the side effects. Split large resolvers into use cases (`BuildProjectUseCase`, `PublishReleaseUseCase`, …) injected through `init`.
-- `Results` describes what happened, often as an enum (`.released`, `.prepared`, `.dryRun`). The resolver doesn't print it; `NnWorkflowCommand.handleResults(_:)` does.
+- Performs the side effects. Split large performers into use cases (`ProjectBuilder`, `ReleasePublisher`, …) injected through `init`.
+- `Results` describes what happened, often as an enum (`.released`, `.prepared`, `.dryRun`). The performer doesn't print it; `NnWorkflowCommand.handleResults(_:)` does.
 
 ---
 
@@ -270,20 +270,20 @@ Thrown by `NnRequirement.resolve(answer:)` for an `.unknown` requirement with a 
 For commands that have nothing to ask. Requirements and answers are both `Void`.
 
 ```swift
-public struct NnPassthroughCollector: NnCommandCollector {
+public struct NnPassthroughCollector: NnCollector {
     // Requirements = Void, Answers = Void
     public init()
     public func collect(requirements: Void) throws
 }
 
 public struct NnPassthroughCollectionInterpreter<Findings: Sendable>: NnCollectionInterpreter {
-    // Requirements = Void, Answers = Void, Context = Findings
+    // Requirements = Void, Answers = Void, Brief = Findings
     public init()
     public func interpret(findings: Findings, requirements: Void, answers: Void) throws -> Findings
 }
 ```
 
-Use them together. The inspection interpreter returns `NnInspection<Findings, Void>`, and the resolver's `Context` *is* the findings:
+Use them together. The inspection interpreter returns `NnInspection<Findings, Void>`, and the performer's `Brief` *is* the findings:
 
 ```swift
 struct StatusWorkflow: NnWorkflow {
@@ -291,7 +291,7 @@ struct StatusWorkflow: NnWorkflow {
     let inspectionInterpreter: StatusInspectionInterpreter   // -> NnInspection<StatusFindings, Void>
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<StatusFindings>
-    let resolver: StatusResolver                              // Context == StatusFindings
+    let performer: StatusPerformer                            // Brief == StatusFindings
 }
 ```
 
@@ -304,7 +304,7 @@ Requires NnArgumentParser 1.3.0 or later.
 Wraps an inspector so a tool can show progress during inspection without the inspector knowing about it. Use it when inspection is slow enough that the command would otherwise look stalled. The `track` closure decides how progress is reported, so the inspector stays unchanged and the package needs no progress dependency.
 
 ```swift
-public struct NnTrackedInspector<Base: NnCommandInspector>: NnCommandInspector {
+public struct NnTrackedInspector<Base: NnInspector>: NnInspector {
     public init(base: Base, track: @escaping (() async throws -> Base.Facts) async throws -> Base.Facts)
     public func inspect() async throws -> Base.Facts
 }
@@ -348,7 +348,7 @@ public protocol NnWorkflowCommand: AsyncParsableCommand {
     associatedtype Workflow: NnWorkflow
 
     func makeWorkflow() throws -> Workflow
-    func handleResults(_ results: Workflow.ResolverType.Results) throws
+    func handleResults(_ results: Workflow.PerformerType.Results) throws
 }
 
 public extension NnWorkflowCommand {
@@ -383,11 +383,11 @@ extension MyTool {
                 inspectionInterpreter: .init(requestedVersion: version),
                 collector: .init(picker: context.picker),
                 collectionInterpreter: .init(),
-                resolver: .init(shell: context.shell, picker: context.picker)
+                performer: .init(shell: context.shell, picker: context.picker)
             )
         }
 
-        func handleResults(_ results: PublishResolver.Results) throws {
+        func handleResults(_ results: PublishPerformer.Results) throws {
             NnOutput.write(PublishResultsFormatter.message(for: results))
         }
     }
@@ -402,6 +402,6 @@ extension MyTool {
 - **Make every requirement an `NnRequirement`.** That keeps the "asked only when missing" rule enforced by the types instead of by `if` checks in the collector.
 - **Put prompt details in `Info`.** The collector shouldn't read facts to find out what to offer. The interpreter that created the `.unknown` passes what's needed.
 - **Validate typed answers in the collection interpreter**, not the collector. The collector records what was entered, and the interpreter decides whether it's valid.
-- **The resolver's use cases may prompt for follow-ups**, such as a final confirmation or an AI suggestion to accept. They never prompt for an input the command needed before it started; that's a requirement.
+- **The performer's use cases may prompt for follow-ups**, such as a final confirmation or an AI suggestion to accept. They never prompt for an input the command needed before it started; that's a requirement.
 - **Use the passthrough stages** when a command has nothing to ask, instead of writing empty collectors.
 - **Use `Sendable` value types for stage payloads.** Internal structs with `Sendable` members get the conformance implicitly. `public` ones must declare it.
