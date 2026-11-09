@@ -8,7 +8,7 @@
 // For commands with nothing to ask: requirements and answers are both Void.
 
 // MARK: - Collector
-public struct NnPassthroughCollector: NnCommandCollector {
+public struct NnPassthroughCollector: NnCollector {
     public typealias Requirements = Void
     public typealias Answers = Void
 
@@ -21,7 +21,7 @@ public struct NnPassthroughCollector: NnCommandCollector {
 public struct NnPassthroughCollectionInterpreter<Findings: Sendable>: NnCollectionInterpreter {
     public typealias Requirements = Void
     public typealias Answers = Void
-    public typealias Context = Findings
+    public typealias Brief = Findings
 
     public init() { }
 

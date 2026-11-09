@@ -1,5 +1,5 @@
 //
-//  MockCommandResolver.swift
+//  MockPerformer.swift
 //  NnArgumentParser
 //
 //  Created by Nikolai Nobadi on 10/12/26.
@@ -7,11 +7,11 @@
 
 import NnArgumentParser
 
-public final class MockCommandResolver<Context: Sendable, Results: Sendable> {
+public final class MockPerformer<Brief: Sendable, Results: Sendable> {
     private let results: Results
     private let throwError: Bool
 
-    public private(set) var capturedContexts: [Context] = []
+    public private(set) var capturedBriefs: [Brief] = []
 
     public init(results: Results, throwError: Bool) {
         self.results = results
@@ -19,10 +19,10 @@ public final class MockCommandResolver<Context: Sendable, Results: Sendable> {
     }
 }
 
-// MARK: - NnCommandResolver
-extension MockCommandResolver: NnCommandResolver {
-    public func resolve(context: Context) throws -> Results {
-        capturedContexts.append(context)
+// MARK: - NnPerformer
+extension MockPerformer: NnPerformer {
+    public func perform(brief: Brief) throws -> Results {
+        capturedBriefs.append(brief)
 
         if throwError {
             throw MockWorkflowError.stageFailed

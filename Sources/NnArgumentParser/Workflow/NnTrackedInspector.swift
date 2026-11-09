@@ -6,7 +6,7 @@
 //
 
 // MARK: - Inspector
-public struct NnTrackedInspector<Base: NnCommandInspector> {
+public struct NnTrackedInspector<Base: NnInspector> {
     private let base: Base
     private let track: (() async throws -> Base.Facts) async throws -> Base.Facts
 
@@ -17,8 +17,8 @@ public struct NnTrackedInspector<Base: NnCommandInspector> {
 }
 
 
-// MARK: - NnCommandInspector
-extension NnTrackedInspector: NnCommandInspector {
+// MARK: - NnInspector
+extension NnTrackedInspector: NnInspector {
     public func inspect() async throws -> Base.Facts {
         return try await track {
             return try await base.inspect()

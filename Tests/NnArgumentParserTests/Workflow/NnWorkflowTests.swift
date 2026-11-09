@@ -19,7 +19,7 @@ struct NnWorkflowTests {
         #expect(results == "results")
         #expect(mocks.inspector.inspectCallCount == 1)
         #expect(mocks.collector.capturedRequirements == ["needed"])
-        #expect(mocks.resolver.capturedContexts == [.init(findings: "derived from facts", answers: "typed")])
+        #expect(mocks.performer.capturedBriefs == [.init(findings: "derived from facts", answers: "typed")])
     }
 }
 
@@ -27,21 +27,21 @@ struct NnWorkflowTests {
 // MARK: - Passthrough
 extension NnWorkflowTests {
     @Test
-    func `The passthrough collector and interpreter forward findings as the context`() async throws {
-        let inspector = MockCommandInspector(facts: "facts", throwError: false)
-        let resolver = MockCommandResolver<String, String>(results: "results", throwError: false)
+    func `The passthrough collector and interpreter forward findings as the brief`() async throws {
+        let inspector = MockInspector(facts: "facts", throwError: false)
+        let performer = MockPerformer<String, String>(results: "results", throwError: false)
         let sut = PassthroughWorkflow(
             inspector: inspector,
             inspectionInterpreter: .init(findings: "findings", requirements: ()),
             collector: .init(),
             collectionInterpreter: .init(),
-            resolver: resolver
+            performer: performer
         )
 
         let results = try await sut.run()
 
         #expect(results == "results")
-        #expect(resolver.capturedContexts == ["findings"])
+        #expect(performer.capturedBriefs == ["findings"])
     }
 }
 
@@ -59,18 +59,18 @@ extension NnWorkflowTests {
     }
 
     @Test
-    func `A failing collector stops the run before the resolver`() async {
+    func `A failing collector stops the run before the performer`() async {
         let (sut, mocks) = makeSUT(collectorThrows: true)
 
         await #expect(throws: MockWorkflowError.stageFailed) {
             try await sut.run()
         }
-        #expect(mocks.resolver.capturedContexts.isEmpty)
+        #expect(mocks.performer.capturedBriefs.isEmpty)
     }
 
     @Test
-    func `A failing resolver surfaces its error`() async {
-        let (sut, _) = makeSUT(resolverThrows: true)
+    func `A failing performer surfaces its error`() async {
+        let (sut, _) = makeSUT(performerThrows: true)
 
         await #expect(throws: MockWorkflowError.stageFailed) {
             try await sut.run()
@@ -88,32 +88,32 @@ private extension NnWorkflowTests {
         results: String = "results",
         inspectorThrows: Bool = false,
         collectorThrows: Bool = false,
-        resolverThrows: Bool = false
+        performerThrows: Bool = false
     ) -> (sut: StubWorkflow, mocks: Mocks) {
-        let inspector = MockCommandInspector(facts: "facts", throwError: inspectorThrows)
-        let collector = MockCommandCollector<String, String>(answers: answers, throwError: collectorThrows)
-        let resolver = MockCommandResolver<StubContext, String>(results: results, throwError: resolverThrows)
+        let inspector = MockInspector(facts: "facts", throwError: inspectorThrows)
+        let collector = MockCollector<String, String>(answers: answers, throwError: collectorThrows)
+        let performer = MockPerformer<StubBrief, String>(results: results, throwError: performerThrows)
         let sut = StubWorkflow(
             inspector: inspector,
             inspectionInterpreter: .init(findings: findings, requirements: requirements),
             collector: collector,
             collectionInterpreter: .init(),
-            resolver: resolver
+            performer: performer
         )
 
-        return (sut, .init(inspector: inspector, collector: collector, resolver: resolver))
+        return (sut, .init(inspector: inspector, collector: collector, performer: performer))
     }
 }
 
 
 // MARK: - Test Doubles
 private struct Mocks {
-    let inspector: MockCommandInspector<String>
-    let collector: MockCommandCollector<String, String>
-    let resolver: MockCommandResolver<StubContext, String>
+    let inspector: MockInspector<String>
+    let collector: MockCollector<String, String>
+    let performer: MockPerformer<StubBrief, String>
 }
 
-private struct StubContext: Sendable, Equatable {
+private struct StubBrief: Sendable, Equatable {
     let findings: String
     let answers: String
 }
@@ -128,23 +128,23 @@ private struct StubInspectionInterpreter<Requirements: Sendable>: NnInspectionIn
 }
 
 private struct StubCollectionInterpreter: NnCollectionInterpreter {
-    func interpret(findings: String, requirements: String, answers: String) throws -> StubContext {
+    func interpret(findings: String, requirements: String, answers: String) throws -> StubBrief {
         return .init(findings: findings, answers: answers)
     }
 }
 
 private struct StubWorkflow: NnWorkflow {
-    let inspector: MockCommandInspector<String>
+    let inspector: MockInspector<String>
     let inspectionInterpreter: StubInspectionInterpreter<String>
-    let collector: MockCommandCollector<String, String>
+    let collector: MockCollector<String, String>
     let collectionInterpreter: StubCollectionInterpreter
-    let resolver: MockCommandResolver<StubContext, String>
+    let performer: MockPerformer<StubBrief, String>
 }
 
 private struct PassthroughWorkflow: NnWorkflow {
-    let inspector: MockCommandInspector<String>
+    let inspector: MockInspector<String>
     let inspectionInterpreter: StubInspectionInterpreter<Void>
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<String>
-    let resolver: MockCommandResolver<String, String>
+    let performer: MockPerformer<String, String>
 }
