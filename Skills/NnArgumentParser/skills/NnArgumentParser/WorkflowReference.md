@@ -4,7 +4,7 @@ API for structuring a command's `run()` as a typed pipeline: **inspect → inter
 
 **Import:** `import NnArgumentParser`
 
-Requires NnArgumentParser 2.0.0 or later for the workflow interfaces shown here.
+The five-stage workflow interfaces require NnArgumentParser 2.0.0 or later. Shared checks, results formatters, and `run()` as a protocol requirement require 2.1.0 or later.
 
 ---
 
@@ -63,6 +63,8 @@ public extension NnWorkflow {
 ```
 
 ### `run()`, a requirement with a default
+
+Requires NnArgumentParser 2.1.0 or later for protocol dispatch to a custom `run()` implementation.
 
 `run()` is a protocol requirement with a default, so a conforming struct doesn't write it. Because it is a requirement, a wrapper such as `NnCheckedWorkflow` can supply its own, and `NnWorkflowCommand` calls that one. The default is:
 
@@ -349,6 +351,8 @@ inspector: .init(base: .init(gitClient: gitClient), track: { work in
 
 ## Shared checks
 
+Requires NnArgumentParser 2.1.0 or later.
+
 Checks that several commands run before their own work: a tool is installed, the working tree is clean, the user confirms an unusual state. A check is a workflow without a performer. It has its own inspector and its own facts, so the same check fits in front of any command, whatever that command's stage types are.
 
 ```swift
@@ -539,6 +543,8 @@ extension MyTool {
 ---
 
 ## Protocol: NnFormattedWorkflowCommand
+
+Requires NnArgumentParser 2.1.0 or later, including `NnResultsFormatter` and `NnStatelessResultsFormatter`.
 
 An `NnWorkflowCommand` whose `handleResults(_:)` is provided: it asks a formatter for the message and writes it. Use it when `handleResults(_:)` would only format the results and write them.
 

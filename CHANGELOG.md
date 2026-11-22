@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-22
+
 ### Added
 
 - Add shared checks: `NnCheck` (a workflow without a performer), `NnCheckGroup` for running several
@@ -168,7 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.0.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.3.0...2.0.0
 [1.3.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.2.0...1.3.0
 [1.2.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.1.0...1.2.0
