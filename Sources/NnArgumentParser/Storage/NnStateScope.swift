@@ -1,13 +1,7 @@
-//
-//  NnStateScope.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Foundation
 
-/// The state a single command run carries: its injected factory and its registered interaction mode.
+/// The command-scoped state a single run carries: its injected factory, its registered interaction
+/// mode, and its output, interrupt, and completion registrations.
 ///
 /// A box lives exactly as long as the scope that installed it, so ending a run discards its state —
 /// there is nothing to reset.

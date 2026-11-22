@@ -1,10 +1,3 @@
-//
-//  NnInterrupt.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 /// Cleanup steps to run when the command is interrupted by SIGINT or SIGTERM.
 ///
 /// Register the app's own teardown — restoring the terminal, stopping child processes — and

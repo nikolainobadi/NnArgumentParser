@@ -1,10 +1,3 @@
-//
-//  KeyValueArgument.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 9/6/26.
-//
-
 import ArgumentParser
 
 /// A `<key>=<value>` pair, so one repeatable option can carry a setting per key without the caller

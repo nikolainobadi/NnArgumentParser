@@ -1,10 +1,3 @@
-//
-//  MockCollector.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/12/26.
-//
-
 import NnArgumentParser
 
 public final class MockCollector<Requirements: Sendable, Answers: Sendable> {

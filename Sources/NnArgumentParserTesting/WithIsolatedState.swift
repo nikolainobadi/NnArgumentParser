@@ -1,10 +1,3 @@
-//
-//  WithIsolatedState.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import NnArgumentParser
 
 /// Runs `body` in its own command scope, for tests that register a mode or read state without `testRun`.

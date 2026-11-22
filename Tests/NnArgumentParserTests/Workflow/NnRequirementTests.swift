@@ -1,10 +1,3 @@
-//
-//  NnRequirementTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/12/26.
-//
-
 import Testing
 import NnArgumentParser
 import NnArgumentParserTesting

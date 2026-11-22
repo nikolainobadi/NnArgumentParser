@@ -1,10 +1,3 @@
-//
-//  NnRootCommandMainTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Testing
 import Foundation
 @testable import NnArgumentParser

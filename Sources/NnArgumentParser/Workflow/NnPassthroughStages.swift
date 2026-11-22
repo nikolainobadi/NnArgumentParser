@@ -1,10 +1,3 @@
-//
-//  NnPassthroughStages.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/12/26.
-//
-
 // For commands with nothing to ask: requirements and answers are both Void.
 
 // MARK: - Collector

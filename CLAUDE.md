@@ -8,6 +8,7 @@ suppressing prompts in automated contexts, and composable command workflows.
   `Interrupt/`, `Output/`, `RootCommand/`, `Storage/`, and `Workflow/` organize its APIs and
   command-scoped state; `NnWorkflow` composes inspect, interpret,
   collect, interpret, and perform stages, while `NnWorkflowCommand` adapts a workflow to a command.
+  `NnCheckedWorkflow` runs shared `NnCheck`s before a workflow.
 - `Sources/NnArgumentParserTesting` — async `testRun` for driving whole commands in tests,
   `withIsolatedState` for scoped state access, and workflow stage mocks for exercising pipeline wiring.
 - `Skills/NnArgumentParser` — **the published API reference.** See below.
@@ -48,7 +49,7 @@ changelog, so a release cut without the rename silently ships an empty entry.
 
 ## Conventions
 
-- Swift 6.2, macOS 15+. Pull-request CI uses Xcode 26.3 on macOS 15 and runs `swift test`.
+- Swift 6.4, macOS 15+. Pull-request CI uses Xcode 27 on the `xcode-27` runner image and runs `swift test`.
 - `@_exported import ArgumentParser` in `Exports.swift` — consumers get the full ArgumentParser
   surface from `import NnArgumentParser` and should never import ArgumentParser separately.
   `NnArgumentParserTesting` likewise does `@_exported import NnArgumentParser`, so test files need
@@ -61,6 +62,18 @@ changelog, so a release cut without the rename silently ships an empty entry.
   adding a progress dependency to the package or changing the base inspector. The async throwing
   `track` closure receives the inspection work; call it once and return its facts. The wrapper
   does not enforce that call count, and errors thrown by `track` propagate to the caller.
+- `NnCheckedWorkflow(checks:base:)` runs shared checks before a workflow. An `NnCheck` is a workflow
+  without a performer; `NnCheckGroup` runs several in declaration order and nests. Each check runs
+  all four stages to completion before the next check or the base workflow starts, so a check may
+  prompt before the command's own inspection blocks. A check stops the run by throwing, by
+  convention from an interpreter, and its brief is discarded. `run()` is an `NnWorkflow` requirement with a default so
+  `NnWorkflowCommand` reaches the wrapper's `run()`; calling the wrapper's stages by hand skips the checks.
+- `NnFormattedWorkflowCommand` provides `handleResults(_:)` for commands that only format and write.
+  The command vends `resultsFormatter`, an `NnResultsFormatter` instance it builds itself, so parsed
+  options can be passed in. The provided `handleResults(_:)` writes `message(for:)` through
+  `NnOutput.write`, and writes nothing when the message is `nil`. A formatter that takes nothing
+  conforms to `NnStatelessResultsFormatter`; its command writes only `typealias ResultsFormatter`
+  and the property is provided. Commands that write more than once keep their own `handleResults(_:)`.
 - Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
   The root's `main()` installs the production scope; `testRun` installs one per run. State survives
   `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering

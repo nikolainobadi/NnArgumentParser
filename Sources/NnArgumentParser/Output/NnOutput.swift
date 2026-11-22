@@ -1,10 +1,3 @@
-//
-//  NnOutput.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Foundation
 
 /// Writes a command's output: to stdout in production, and to the run's own buffer under `testRun`.

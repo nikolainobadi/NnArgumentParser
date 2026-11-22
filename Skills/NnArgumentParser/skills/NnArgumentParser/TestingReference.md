@@ -13,7 +13,7 @@ Runs a root command end-to-end in a test and returns its captured `NnOutput.writ
 ```swift
 extension NnRootCommand {
     @discardableResult
-    static func testRun(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> String
+    public static func testRun(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> String
 }
 ```
 
@@ -42,7 +42,7 @@ Runs a root command exactly like `testRun`, and also returns the interrupt clean
 
 ```swift
 extension NnRootCommand {
-    static func testRunCapturingCleanups(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> NnTestRunResult
+    public static func testRunCapturingCleanups(contextFactory: Factory?, args: [String]?, interactionMode: InteractionMode?) async throws -> NnTestRunResult
 }
 
 public struct NnTestRunResult: Sendable {
@@ -172,6 +172,16 @@ private struct TestWorkflow: NnWorkflow {
 ```
 
 To stop a run at a given stage, pass `throwError: true` and assert with `await #expect(throws: MockWorkflowError.stageFailed) { try await sut.run() }`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
+
+### Shared checks
+
+An `NnCheck` is made of ordinary stages, so it needs no mocks of its own. Test its interpreters directly, and put `MockInspector` and `MockCollector` around them in a test check when you need the edges mocked. Test the command's own workflow as before, without the checks.
+
+To test that a command runs its checks, drive the `NnCheckedWorkflow` through `run()` or the command through `testRun`. Don't call the checked workflow's stages one by one: they are the base workflow's stages, so that path skips every check. To assert that a failed check stops the command, expect the check's error from `run()` and then check that the base workflow's mocks recorded nothing, for example `performer.capturedBriefs.isEmpty`.
+
+### Results formatters
+
+An `NnResultsFormatter` is a pure function of the results and whatever the command passed to its initializer, so test it directly, like an interpreter: build the formatter, call `message(for:)`, and assert on the string or on `nil`. To test that an `NnFormattedWorkflowCommand` writes the message, run the command through `testRun` and assert on the captured output.
 
 ## Asserting on requirements
 

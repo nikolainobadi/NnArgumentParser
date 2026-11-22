@@ -1,10 +1,3 @@
-//
-//  NnWorkflow.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/3/26.
-//
-
 // MARK: - Workflow
 public protocol NnWorkflow {
     associatedtype InspectorType: NnInspector
@@ -28,6 +21,8 @@ public protocol NnWorkflow {
     var collector: CollectorType { get }
     var collectionInterpreter: CollectionInterpreter { get }
     var performer: PerformerType { get }
+
+    func run() async throws -> PerformerType.Results
 }
 
 // MARK: - Run

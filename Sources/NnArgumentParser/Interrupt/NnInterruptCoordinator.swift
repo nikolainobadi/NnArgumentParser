@@ -1,10 +1,3 @@
-//
-//  NnInterruptCoordinator.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Foundation
 
 /// Turns SIGINT and SIGTERM into one orderly shutdown: the run's cleanups, `Interrupted.`, then

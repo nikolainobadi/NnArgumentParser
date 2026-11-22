@@ -1,10 +1,3 @@
-//
-//  TestRunInteractionModeTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 8/9/26.
-//
-
 import Testing
 import NnArgumentParser
 import NnArgumentParserTesting

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add shared checks: `NnCheck` (a workflow without a performer), `NnCheckGroup` for running several
+  checks in declaration order, and `NnCheckedWorkflow` for running checks to completion before a
+  workflow. A failed or declined check stops every later check and the wrapped workflow. Add
+  `NnRunnableCheck`, the `run()`-only protocol that checks and groups share.
+- Add `NnFormattedWorkflowCommand`, an `NnWorkflowCommand` that vends a `resultsFormatter` and gets
+  `handleResults(_:)` for free: it writes the formatter's message, or nothing when the message is
+  `nil`. The command builds the formatter, so parsed options can shape the output. Add
+  `NnResultsFormatter`, the protocol for that formatter, and `NnStatelessResultsFormatter` for
+  formatters that take nothing: a command names one with `typealias ResultsFormatter` and the
+  `resultsFormatter` property is provided.
+
+### Changed
+
+- Require Swift 6.4 (Xcode 27) or later. Upgrade the toolchain when adopting this release (breaking).
+- Make `run()` an `NnWorkflow` protocol requirement, keeping the existing implementation as its
+  default. Conformers that use the default are unaffected. A conformer's own `run()` is now the one
+  `NnWorkflowCommand` calls; previously the default was always called.
+
 ## [2.0.0] - 2026-11-09
 
 ### Changed

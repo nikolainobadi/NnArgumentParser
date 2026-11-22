@@ -1,10 +1,3 @@
-//
-//  NnTrackedInspectorTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 11/3/26.
-//
-
 import Testing
 import NnArgumentParserTesting
 
