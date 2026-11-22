@@ -18,7 +18,7 @@ extension NnRootCommand {
     ///     decision to the parsed arguments and the environment, which is what a test exercising
     ///     the flags wants.
     /// - Returns: The captured output as a trimmed string.
-    /// - Throws: Any error thrown by the command's `run()` method.
+    /// - Throws: Any error thrown while parsing or running the command.
     ///
     /// ## Example
     ///
@@ -73,7 +73,7 @@ extension NnRootCommand {
     /// ```
     ///
     /// - Returns: The captured output and the registered cleanups, last registered first.
-    /// - Throws: Any error thrown by the command's `run()` method.
+    /// - Throws: Any error thrown while parsing or running the command.
     public static func testRunCapturingCleanups(
         contextFactory: Factory?,
         args: [String]?,

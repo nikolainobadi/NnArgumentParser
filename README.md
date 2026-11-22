@@ -1,6 +1,6 @@
 # NnArgumentParser
 
-![Swift 6.2](https://img.shields.io/badge/Swift-6.2-orange.svg)
+![Swift 6.4](https://img.shields.io/badge/Swift-6.4-orange.svg)
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blueviolet.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-lightgrey.svg)
 
@@ -32,7 +32,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
 - **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
-- **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and a performer for execution; `NnWorkflowCommand` provides async command execution
+- **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and a performer for execution; `NnWorkflowCommand` provides async command execution, and `NnFormattedWorkflowCommand` writes the results through a formatter so the command needs no `handleResults(_:)`
 - **Inspection progress** — `NnTrackedInspector` wraps an inspector with a caller-provided async closure for reporting progress
 - **Shared checks** — `NnCheckedWorkflow` runs reusable `NnCheck`s to completion before a command's workflow, and `NnCheckGroup` shares sets of them between commands
 - **ArgumentParser re-export** — one import gets you both
@@ -40,7 +40,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 ## Requirements
 
 - macOS 15+
-- Swift 6.2+
+- Swift 6.4+
 
 ## Installation
 

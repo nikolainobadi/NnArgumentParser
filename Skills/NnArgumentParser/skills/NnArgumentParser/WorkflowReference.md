@@ -538,6 +538,79 @@ extension MyTool {
 
 ---
 
+## Protocol: NnFormattedWorkflowCommand
+
+An `NnWorkflowCommand` whose `handleResults(_:)` is provided: it asks a formatter for the message and writes it. Use it when `handleResults(_:)` would only format the results and write them.
+
+```swift
+public protocol NnResultsFormatter {
+    associatedtype Results
+
+    func message(for results: Results) -> String?
+}
+
+public protocol NnFormattedWorkflowCommand: NnWorkflowCommand {
+    associatedtype ResultsFormatter: NnResultsFormatter
+    where ResultsFormatter.Results == Workflow.PerformerType.Results
+
+    var resultsFormatter: ResultsFormatter { get }
+}
+
+public extension NnFormattedWorkflowCommand {
+    func handleResults(_ results: Workflow.PerformerType.Results) throws
+}
+```
+
+The provided `handleResults(_:)` asks `resultsFormatter` for the message and writes it with `NnOutput.write`. When the message is `nil`, it writes nothing. Swift infers `ResultsFormatter` from the property's type, so no `typealias` is needed.
+
+Declare `resultsFormatter` as a computed property. A stored one makes the command fail to compile with an error that it doesn't conform to `Decodable`, because ArgumentParser decodes every stored property of a command.
+
+The command builds the formatter, so parsed options can shape the output. A command with a `--json` flag passes it in: `var resultsFormatter: StatusResultsFormatter { .init(json: json) }`.
+
+A command that needs more than one write, or anything besides writing, keeps its own `handleResults(_:)`.
+
+### Usage Example
+
+```swift
+struct PublishMessageFormatter: NnResultsFormatter {
+    func message(for results: PublishPerformer.Results) -> String? {
+        switch results {
+        case .released(let version):
+            return "Released \(version)."
+        case .dryRun:
+            return nil
+        }
+    }
+}
+
+extension MyTool {
+    struct Publish: NnFormattedWorkflowCommand {
+        static let configuration = CommandConfiguration(abstract: "Tags and publishes a release.")
+
+        @Argument(help: "The version to publish. Prompts when omitted.")
+        var version: String?
+
+        var resultsFormatter: PublishMessageFormatter {
+            return .init()
+        }
+
+        func makeWorkflow() throws -> PublishWorkflow {
+            let context = MyTool.makeContext()
+
+            return .init(
+                inspector: .init(shell: context.shell, fileSystem: context.fileSystem),
+                inspectionInterpreter: .init(requestedVersion: version),
+                collector: .init(picker: context.picker),
+                collectionInterpreter: .init(),
+                performer: .init(shell: context.shell, picker: context.picker)
+            )
+        }
+    }
+}
+```
+
+---
+
 ## Best Practices
 
 - **The inspector reports, the interpreters decide.** A missing file or an absent tool is a fact. Whether it's fatal is an interpretation.

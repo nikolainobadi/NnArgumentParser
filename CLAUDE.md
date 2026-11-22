@@ -49,7 +49,7 @@ changelog, so a release cut without the rename silently ships an empty entry.
 
 ## Conventions
 
-- Swift 6.2, macOS 15+. Pull-request CI uses Xcode 26.3 on macOS 15 and runs `swift test`.
+- Swift 6.4, macOS 15+. Pull-request CI uses Xcode 27 on the `xcode-27` runner image and runs `swift test`.
 - `@_exported import ArgumentParser` in `Exports.swift` — consumers get the full ArgumentParser
   surface from `import NnArgumentParser` and should never import ArgumentParser separately.
   `NnArgumentParserTesting` likewise does `@_exported import NnArgumentParser`, so test files need
@@ -68,6 +68,11 @@ changelog, so a release cut without the rename silently ships an empty entry.
   prompt before the command's own inspection blocks. A check stops the run by throwing, by
   convention from an interpreter, and its brief is discarded. `run()` is an `NnWorkflow` requirement with a default so
   `NnWorkflowCommand` reaches the wrapper's `run()`; calling the wrapper's stages by hand skips the checks.
+- `NnFormattedWorkflowCommand` provides `handleResults(_:)` for commands that only format and write.
+  The command vends `resultsFormatter`, an `NnResultsFormatter` instance it builds itself, so parsed
+  options can be passed in. The provided `handleResults(_:)` writes `message(for:)` through
+  `NnOutput.write`, and writes nothing when the message is `nil`. Commands that write more than
+  once keep their own `handleResults(_:)`.
 - Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
   The root's `main()` installs the production scope; `testRun` installs one per run. State survives
   `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering
