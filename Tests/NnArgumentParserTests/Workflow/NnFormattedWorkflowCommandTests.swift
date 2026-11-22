@@ -23,6 +23,13 @@ struct NnFormattedWorkflowCommandTests {
 
         #expect(output == "MESSAGE: RELEASED")
     }
+
+    @Test
+    func `A command that only names a stateless formatter writes its message`() async throws {
+        let output = try await StatelessFormattedCommand.testRun(contextFactory: "released", args: [], interactionMode: .nonInteractive(assumeYes: false))
+
+        #expect(output == "Plain: released")
+    }
 }
 
 
@@ -58,6 +65,28 @@ private struct MessageFormatter: NnResultsFormatter {
         let message = "Message: \(results)"
 
         return uppercase ? message.uppercased() : message
+    }
+}
+
+private struct StatelessFormattedCommand: NnRootCommand, NnFormattedWorkflowCommand {
+    typealias ResultsFormatter = PlainFormatter
+
+    static var defaultFactory: String { "" }
+
+    func makeWorkflow() throws -> MessageWorkflow {
+        return .init(
+            inspector: .init(value: Self.contextFactory),
+            inspectionInterpreter: .init(),
+            collector: .init(),
+            collectionInterpreter: .init(),
+            performer: .init()
+        )
+    }
+}
+
+private struct PlainFormatter: NnStatelessResultsFormatter {
+    func message(for results: String) -> String? {
+        return "Plain: \(results)"
     }
 }
 

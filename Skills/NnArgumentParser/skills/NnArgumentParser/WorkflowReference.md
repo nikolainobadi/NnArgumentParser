@@ -549,6 +549,10 @@ public protocol NnResultsFormatter {
     func message(for results: Results) -> String?
 }
 
+public protocol NnStatelessResultsFormatter: NnResultsFormatter {
+    init()
+}
+
 public protocol NnFormattedWorkflowCommand: NnWorkflowCommand {
     associatedtype ResultsFormatter: NnResultsFormatter
     where ResultsFormatter.Results == Workflow.PerformerType.Results
@@ -559,20 +563,31 @@ public protocol NnFormattedWorkflowCommand: NnWorkflowCommand {
 public extension NnFormattedWorkflowCommand {
     func handleResults(_ results: Workflow.PerformerType.Results) throws
 }
+
+public extension NnFormattedWorkflowCommand where ResultsFormatter: NnStatelessResultsFormatter {
+    var resultsFormatter: ResultsFormatter { get }
+}
 ```
 
-The provided `handleResults(_:)` asks `resultsFormatter` for the message and writes it with `NnOutput.write`. When the message is `nil`, it writes nothing. Swift infers `ResultsFormatter` from the property's type, so no `typealias` is needed.
+The provided `handleResults(_:)` asks `resultsFormatter` for the message and writes it with `NnOutput.write`. When the message is `nil`, it writes nothing.
 
-Declare `resultsFormatter` as a computed property. A stored one makes the command fail to compile with an error that it doesn't conform to `Decodable`, because ArgumentParser decodes every stored property of a command.
+A command says which formatter it uses in one of two ways:
 
-The command builds the formatter, so parsed options can shape the output. A command with a `--json` flag passes it in: `var resultsFormatter: StatusResultsFormatter { .init(json: json) }`.
+| Formatter | Conforms to | The command writes |
+|-----------|-------------|--------------------|
+| Needs nothing passed in | `NnStatelessResultsFormatter` | `typealias ResultsFormatter = PublishMessageFormatter`. The provided `resultsFormatter` builds it with `init()`. |
+| Takes parsed options or other values | `NnResultsFormatter` | `var resultsFormatter: StatusResultsFormatter { .init(json: json) }`. Swift infers `ResultsFormatter` from the property's type, so no `typealias` is needed. |
+
+A struct with no stored properties already has `init()`, so a stateless formatter only has to name the protocol. A command that writes neither the `typealias` nor the property fails to compile, because Swift can't infer `ResultsFormatter`.
+
+When you write `resultsFormatter` yourself, declare it as a computed property. A stored one makes the command fail to compile with an error that it doesn't conform to `Decodable`, because ArgumentParser decodes every stored property of a command.
 
 A command that needs more than one write, or anything besides writing, keeps its own `handleResults(_:)`.
 
 ### Usage Example
 
 ```swift
-struct PublishMessageFormatter: NnResultsFormatter {
+struct PublishMessageFormatter: NnStatelessResultsFormatter {
     func message(for results: PublishPerformer.Results) -> String? {
         switch results {
         case .released(let version):
@@ -585,14 +600,12 @@ struct PublishMessageFormatter: NnResultsFormatter {
 
 extension MyTool {
     struct Publish: NnFormattedWorkflowCommand {
+        typealias ResultsFormatter = PublishMessageFormatter
+
         static let configuration = CommandConfiguration(abstract: "Tags and publishes a release.")
 
         @Argument(help: "The version to publish. Prompts when omitted.")
         var version: String?
-
-        var resultsFormatter: PublishMessageFormatter {
-            return .init()
-        }
 
         func makeWorkflow() throws -> PublishWorkflow {
             let context = MyTool.makeContext()

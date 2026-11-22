@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `NnFormattedWorkflowCommand`, an `NnWorkflowCommand` that vends a `resultsFormatter` and gets
   `handleResults(_:)` for free: it writes the formatter's message, or nothing when the message is
   `nil`. The command builds the formatter, so parsed options can shape the output. Add
-  `NnResultsFormatter`, the protocol for that formatter.
+  `NnResultsFormatter`, the protocol for that formatter, and `NnStatelessResultsFormatter` for
+  formatters that take nothing: a command names one with `typealias ResultsFormatter` and the
+  `resultsFormatter` property is provided.
 
 ### Changed
 

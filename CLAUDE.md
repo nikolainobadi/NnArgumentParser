@@ -71,8 +71,9 @@ changelog, so a release cut without the rename silently ships an empty entry.
 - `NnFormattedWorkflowCommand` provides `handleResults(_:)` for commands that only format and write.
   The command vends `resultsFormatter`, an `NnResultsFormatter` instance it builds itself, so parsed
   options can be passed in. The provided `handleResults(_:)` writes `message(for:)` through
-  `NnOutput.write`, and writes nothing when the message is `nil`. Commands that write more than
-  once keep their own `handleResults(_:)`.
+  `NnOutput.write`, and writes nothing when the message is `nil`. A formatter that takes nothing
+  conforms to `NnStatelessResultsFormatter`; its command writes only `typealias ResultsFormatter`
+  and the property is provided. Commands that write more than once keep their own `handleResults(_:)`.
 - Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
   The root's `main()` installs the production scope; `testRun` installs one per run. State survives
   `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering
