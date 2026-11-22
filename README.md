@@ -34,6 +34,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
 - **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and a performer for execution; `NnWorkflowCommand` provides async command execution
 - **Inspection progress** — `NnTrackedInspector` wraps an inspector with a caller-provided async closure for reporting progress
+- **Shared checks** — `NnCheckedWorkflow` runs reusable `NnCheck`s to completion before a command's workflow, and `NnCheckGroup` shares sets of them between commands
 - **ArgumentParser re-export** — one import gets you both
 
 ## Requirements

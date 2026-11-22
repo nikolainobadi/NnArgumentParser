@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add shared checks: `NnCheck` (a workflow without a performer), `NnCheckGroup` for running several
+  checks in declaration order, and `NnCheckedWorkflow` for running checks to completion before a
+  workflow. A failed or declined check stops every later check and the wrapped workflow. Add
+  `NnRunnableCheck`, the `run()`-only protocol that checks and groups share.
+
+### Changed
+
+- Make `run()` an `NnWorkflow` protocol requirement, keeping the existing implementation as its
+  default. Conformers that use the default are unaffected. A conformer's own `run()` is now the one
+  `NnWorkflowCommand` calls; previously the default was always called.
+
 ## [2.0.0] - 2026-11-09
 
 ### Changed

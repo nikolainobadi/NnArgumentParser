@@ -28,6 +28,8 @@ public protocol NnWorkflow {
     var collector: CollectorType { get }
     var collectionInterpreter: CollectionInterpreter { get }
     var performer: PerformerType { get }
+
+    func run() async throws -> PerformerType.Results
 }
 
 // MARK: - Run
