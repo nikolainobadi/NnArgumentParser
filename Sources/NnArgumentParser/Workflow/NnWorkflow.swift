@@ -1,10 +1,3 @@
-//
-//  NnWorkflow.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/3/26.
-//
-
 // MARK: - Workflow
 public protocol NnWorkflow {
     associatedtype InspectorType: NnInspector

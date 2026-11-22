@@ -1,10 +1,3 @@
-//
-//  RunOutcomeTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/25/26.
-//
-
 import Testing
 @testable import NnArgumentParser
 

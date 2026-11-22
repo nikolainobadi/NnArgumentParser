@@ -1,10 +1,3 @@
-//
-//  CaseInsensitiveArgument.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 9/6/26.
-//
-
 import ArgumentParser
 
 /// An `ExpressibleByArgument` enum whose values parse regardless of letter case.

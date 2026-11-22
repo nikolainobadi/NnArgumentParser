@@ -1,10 +1,3 @@
-//
-//  InteractionMode+Storage.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 8/9/26.
-//
-
 import Foundation
 
 // MARK: - Storage

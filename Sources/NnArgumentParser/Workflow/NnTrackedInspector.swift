@@ -1,10 +1,3 @@
-//
-//  NnTrackedInspector.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 11/3/26.
-//
-
 // MARK: - Inspector
 public struct NnTrackedInspector<Base: NnInspector> {
     private let base: Base

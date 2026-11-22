@@ -1,10 +1,3 @@
-//
-//  InteractivityOptionsTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 8/9/26.
-//
-
 import Testing
 @testable import NnArgumentParser
 import NnArgumentParserTesting

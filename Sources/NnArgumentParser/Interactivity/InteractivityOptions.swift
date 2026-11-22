@@ -1,10 +1,3 @@
-//
-//  InteractivityOptions.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 8/9/26.
-//
-
 import ArgumentParser
 
 /// The `--non-interactive` and `--yes` flags, for commands that would otherwise prompt for values

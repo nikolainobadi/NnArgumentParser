@@ -1,10 +1,3 @@
-//
-//  NnCheckedWorkflowTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 11/22/26.
-//
-
 import Testing
 import NnArgumentParserTesting
 

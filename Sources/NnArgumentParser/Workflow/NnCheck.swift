@@ -1,10 +1,3 @@
-//
-//  NnCheck.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 11/22/26.
-//
-
 // MARK: - Runnable Check
 // Anything that can run before a command's workflow and stop it by throwing.
 public protocol NnRunnableCheck {

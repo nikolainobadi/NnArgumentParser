@@ -1,10 +1,3 @@
-//
-//  NnCheckedWorkflow.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 11/22/26.
-//
-
 // MARK: - Checked Workflow
 public struct NnCheckedWorkflow<Checks: NnRunnableCheck, Base: NnWorkflow> {
     private let checks: Checks

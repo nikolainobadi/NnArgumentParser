@@ -1,10 +1,3 @@
-//
-//  NnCompletion.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/25/26.
-//
-
 /// Observers told how the command's run ended.
 ///
 /// Register an observer — ending a log, recording telemetry, pointing the user at a log file — and

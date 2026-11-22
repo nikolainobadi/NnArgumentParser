@@ -1,10 +1,3 @@
-//
-//  TestRunCompletionTests.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/25/26.
-//
-
 import Testing
 import Foundation
 import NnArgumentParser

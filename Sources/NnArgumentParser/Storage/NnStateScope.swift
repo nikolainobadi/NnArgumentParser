@@ -1,10 +1,3 @@
-//
-//  NnStateScope.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Foundation
 
 /// The state a single command run carries: its injected factory and its registered interaction mode.

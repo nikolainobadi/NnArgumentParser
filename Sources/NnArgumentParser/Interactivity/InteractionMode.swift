@@ -1,10 +1,3 @@
-//
-//  InteractionMode.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 8/9/26.
-//
-
 /// Describes whether a command may prompt the user for input.
 ///
 /// Commands frequently ask for values the caller didn't supply as arguments. That works

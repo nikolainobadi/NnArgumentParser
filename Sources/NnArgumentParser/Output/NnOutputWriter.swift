@@ -1,10 +1,3 @@
-//
-//  NnOutputWriter.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 /// Receives command output from ``NnOutput/write(_:)`` when a run registers it.
 ///
 /// Register one to route output through an app-provided sink, such as a log, a TUI, or a

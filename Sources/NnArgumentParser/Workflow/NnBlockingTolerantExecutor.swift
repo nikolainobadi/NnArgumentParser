@@ -1,10 +1,3 @@
-//
-//  NnBlockingTolerantExecutor.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 import Dispatch
 
 /// Runs workflow jobs on a concurrent dispatch queue instead of the cooperative pool, so a stage

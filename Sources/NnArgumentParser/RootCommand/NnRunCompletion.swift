@@ -1,10 +1,3 @@
-//
-//  NnRunCompletion.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/16/26.
-//
-
 /// What ``NnRootCommand/main()`` does once the command has run.
 enum NnRunCompletion {
     /// Return normally, as ArgumentParser does after a successful run.

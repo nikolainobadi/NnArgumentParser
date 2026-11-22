@@ -1,10 +1,3 @@
-//
-//  NnWorkflowCommand.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/3/26.
-//
-
 import ArgumentParser
 
 public protocol NnWorkflowCommand: AsyncParsableCommand {

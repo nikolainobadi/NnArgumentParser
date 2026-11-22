@@ -1,10 +1,3 @@
-//
-//  NnRequirement.swift
-//  NnArgumentParser
-//
-//  Created by Nikolai Nobadi on 10/12/26.
-//
-
 import Foundation
 
 // Known: settled from input or facts. Unknown: missing, with the data the collector needs to ask for it.
