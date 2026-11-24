@@ -57,7 +57,9 @@ struct NnInterruptCoordinatorTests {
 
 // MARK: - Real Signals
 /// Every real signal is sent inside an exit test's child process. A debugger attached to the test
-/// runner, as Xcode's is, stops the process on SIGINT instead of delivering it.
+/// runner, as Xcode's is, stops the process on SIGINT instead of delivering it, so the run hangs
+/// until it is canceled. The suite is skipped while a debugger is attached.
+@Suite(.disabled(if: isDebuggerAttached, "A debugger stops the process on SIGINT instead of delivering it"))
 struct NnInterruptRealSignalTests {
     #if compiler(>=6.2)
     @Test
@@ -124,6 +126,18 @@ private extension NnInterruptCoordinatorTests {
         )
     }
 }
+
+
+// MARK: - Debugger Detection
+/// Whether this process is being traced, as it is when Xcode runs tests under LLDB.
+private let isDebuggerAttached: Bool = {
+    var info = kinfo_proc()
+    var size = MemoryLayout<kinfo_proc>.stride
+    var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+    let result = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
+
+    return result == 0 && (info.kp_proc.p_flag & P_TRACED) != 0
+}()
 
 
 // MARK: - Test Doubles
