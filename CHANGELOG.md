@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NnCustomResultsWorkflowCommand` when it writes more than once or does anything besides writing
   (breaking).
 
+### Removed
+
+- Remove `NnCheck`, `NnRunnableCheck`, `NnCheckGroup`, and `NnCheckedWorkflow`. Move a shared
+  precondition into each command's inspection, or keep a wrapper workflow local to the tool when the
+  precondition prompts (breaking).
+
 ### Fixed
 
 - Record an interrupt before running interrupt cleanups. The cleanup queue could fire before the

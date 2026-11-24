@@ -173,14 +173,6 @@ private struct TestWorkflow: NnWorkflow {
 
 To stop a run at a given stage, pass `throwError: true` and assert with `await #expect(throws: MockWorkflowError.stageFailed) { try await sut.run() }`. Then check that later stages recorded nothing, for example `collector.capturedRequirements.isEmpty`.
 
-### Shared checks
-
-Requires NnArgumentParser 2.1.0 or later.
-
-An `NnCheck` is made of ordinary stages, so it needs no mocks of its own. Test its interpreters directly, and put `MockInspector` and `MockCollector` around them in a test check when you need the edges mocked. Test the command's own workflow as before, without the checks.
-
-To test that a command runs its checks, drive the `NnCheckedWorkflow` through `run()` or the command through `testRun`. Don't call the checked workflow's stages one by one: they are the base workflow's stages, so that path skips every check. To assert that a failed check stops the command, expect the check's error from `run()` and then check that the base workflow's mocks recorded nothing, for example `performer.capturedBriefs.isEmpty`.
-
 ### Results formatters
 
 Requires NnArgumentParser 2.1.0 or later.
