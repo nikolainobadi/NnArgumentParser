@@ -56,8 +56,9 @@ changelog, so a release cut without the rename silently ships an empty entry.
   only `import NnArgumentParserTesting`.
 - `NnRootCommand` and `NnWorkflowCommand` conform to `AsyncParsableCommand`. Workflow `run()`,
   inspector `inspect()`, and performer `perform(brief:)` are async; collection and interpretation
-  remain synchronous. `NnWorkflowCommand` runs the workflow with a dispatch-backed task executor
-  preference to accommodate blocking stages.
+  remain synchronous. `NnCustomResultsWorkflowCommand` provides `run()`, which runs the workflow with
+  a dispatch-backed task executor preference to accommodate blocking stages; `NnWorkflowCommand`
+  refines it and inherits that `run()`.
 - `NnTrackedInspector(base:track:)` wraps a workflow inspector for progress reporting without
   adding a progress dependency to the package or changing the base inspector. The async throwing
   `track` closure receives the inspection work; call it once and return its facts. The wrapper
@@ -68,12 +69,13 @@ changelog, so a release cut without the rename silently ships an empty entry.
   prompt before the command's own inspection blocks. A check stops the run by throwing, by
   convention from an interpreter, and its brief is discarded. `run()` is an `NnWorkflow` requirement with a default so
   `NnWorkflowCommand` reaches the wrapper's `run()`; calling the wrapper's stages by hand skips the checks.
-- `NnFormattedWorkflowCommand` provides `handleResults(_:)` for commands that only format and write.
+- `NnWorkflowCommand` provides `handleResults(_:)` for commands that only format and write.
   The command vends `resultsFormatter`, an `NnResultsFormatter` instance it builds itself, so parsed
   options can be passed in. The provided `handleResults(_:)` writes `message(for:)` through
   `NnOutput.write`, and writes nothing when the message is `nil`. A formatter that takes nothing
   conforms to `NnStatelessResultsFormatter`; its command writes only `typealias ResultsFormatter`
-  and the property is provided. Commands that write more than once keep their own `handleResults(_:)`.
+  and the property is provided. Commands that write more than once, or do anything besides writing,
+  conform to `NnCustomResultsWorkflowCommand` and write their own `handleResults(_:)`.
 - Task-local command scopes back `NnRootCommand.contextFactory` and `InteractionMode.current`.
   The root's `main()` installs the production scope; `testRun` installs one per run. State survives
   `await` and is inherited by child tasks, but not `Task.detached`. Reading the factory or registering

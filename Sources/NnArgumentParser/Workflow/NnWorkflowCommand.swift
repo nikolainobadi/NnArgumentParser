@@ -1,19 +1,36 @@
-import ArgumentParser
+// MARK: - Results Formatter
+public protocol NnResultsFormatter {
+    associatedtype Results
 
-public protocol NnWorkflowCommand: AsyncParsableCommand {
-    associatedtype Workflow: NnWorkflow
-
-    func makeWorkflow() throws -> Workflow
-    func handleResults(_ results: Workflow.PerformerType.Results) throws
+    func message(for results: Results) -> String?
 }
 
-public extension NnWorkflowCommand {
-    mutating func run() async throws {
-        let workflow = try makeWorkflow()
-        let results = try await withTaskExecutorPreference(NnBlockingTolerantExecutor.shared) {
-            try await workflow.run()
-        }
+// MARK: - Stateless Results Formatter
+// A formatter that needs nothing passed in, so a command can name it instead of building it.
+public protocol NnStatelessResultsFormatter: NnResultsFormatter {
+    init()
+}
 
-        try handleResults(results)
+// MARK: - Workflow Command
+public protocol NnWorkflowCommand: NnCustomResultsWorkflowCommand {
+    associatedtype ResultsFormatter: NnResultsFormatter
+    where ResultsFormatter.Results == Workflow.PerformerType.Results
+
+    var resultsFormatter: ResultsFormatter { get }
+}
+
+// MARK: - Handle Results
+public extension NnWorkflowCommand {
+    func handleResults(_ results: Workflow.PerformerType.Results) throws {
+        if let message = resultsFormatter.message(for: results) {
+            NnOutput.write(message)
+        }
+    }
+}
+
+// MARK: - Stateless Formatter
+public extension NnWorkflowCommand where ResultsFormatter: NnStatelessResultsFormatter {
+    var resultsFormatter: ResultsFormatter {
+        return .init()
     }
 }

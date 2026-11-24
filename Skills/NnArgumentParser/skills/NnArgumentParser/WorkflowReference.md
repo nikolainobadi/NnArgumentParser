@@ -207,7 +207,7 @@ public protocol NnPerformer {
 ```
 
 - Performs the side effects. Split large performers into use cases (`ProjectBuilder`, `ReleasePublisher`, …) injected through `init`.
-- `Results` describes what happened, often as an enum (`.released`, `.prepared`, `.dryRun`). The performer doesn't print it; `NnWorkflowCommand.handleResults(_:)` does.
+- `Results` describes what happened, often as an enum (`.released`, `.prepared`, `.dryRun`). The performer doesn't print it; the command's results formatter does (see `NnWorkflowCommand`).
 
 ---
 
@@ -433,10 +433,12 @@ struct CleanTreeCollectionInterpreter: NnCollectionInterpreter {
 }
 ```
 
-A command adopts checks by wrapping its workflow in `makeWorkflow()`. The workflow type and `handleResults(_:)` don't change:
+A command adopts checks by wrapping its workflow in `makeWorkflow()`. The workflow type and results formatter don't change:
 
 ```swift
 struct Publish: NnWorkflowCommand {
+    typealias ResultsFormatter = PublishMessageFormatter
+
     @Argument(help: "The version to publish. Prompts when omitted.")
     var version: String?
 
@@ -456,10 +458,6 @@ struct Publish: NnWorkflowCommand {
                 performer: .init(shell: context.shell, picker: context.picker)
             )
         )
-    }
-
-    func handleResults(_ results: PublishPerformer.Results) throws {
-        NnOutput.write(PublishResultsFormatter.message(for: results))
     }
 }
 ```
@@ -487,66 +485,9 @@ NnCheckGroup(repositoryChecks, signingKeyCheck)   // clean tree, off main, then 
 
 ## Protocol: NnWorkflowCommand
 
-An `AsyncParsableCommand` whose `run()` builds and runs a workflow, then hands the results back to the command.
+Requires NnArgumentParser 3.0.0 or later. In 2.1.0 this protocol is named `NnFormattedWorkflowCommand`.
 
-```swift
-public protocol NnWorkflowCommand: AsyncParsableCommand {
-    associatedtype Workflow: NnWorkflow
-
-    func makeWorkflow() throws -> Workflow
-    func handleResults(_ results: Workflow.PerformerType.Results) throws
-}
-
-public extension NnWorkflowCommand {
-    mutating func run() async throws
-}
-```
-
-| Member | Role |
-|--------|------|
-| `makeWorkflow()` | The command's **composition root**. Pull infrastructure from the root command's `contextFactory`, build the stages, and inject parsed options into the inspection interpreter. |
-| `handleResults(_:)` | Presentation. Format `Results` and write them with `NnOutput.write`, usually through a formatter type. This is the only stage that writes the final report to stdout. |
-
-Don't implement `run()` yourself. The extension builds the workflow, awaits it with a blocking-tolerant executor preference, then calls synchronous `handleResults(_:)`. This lets workflow task-group children make blocking calls without occupying the cooperative pool's threads. Calling `workflow.run()` directly does not install this preference. Use `NnOutput.write` so `testRun` can capture the report.
-
-### Usage Example
-
-```swift
-import NnArgumentParser
-
-extension MyTool {
-    struct Publish: NnWorkflowCommand {
-        static let configuration = CommandConfiguration(abstract: "Tags and publishes a release.")
-
-        @Argument(help: "The version to publish. Prompts when omitted.")
-        var version: String?
-
-        func makeWorkflow() throws -> PublishWorkflow {
-            let context = MyTool.makeContext()   // infrastructure from contextFactory
-
-            return .init(
-                inspector: .init(shell: context.shell, fileSystem: context.fileSystem),
-                inspectionInterpreter: .init(requestedVersion: version),
-                collector: .init(picker: context.picker),
-                collectionInterpreter: .init(),
-                performer: .init(shell: context.shell, picker: context.picker)
-            )
-        }
-
-        func handleResults(_ results: PublishPerformer.Results) throws {
-            NnOutput.write(PublishResultsFormatter.message(for: results))
-        }
-    }
-}
-```
-
----
-
-## Protocol: NnFormattedWorkflowCommand
-
-Requires NnArgumentParser 2.1.0 or later, including `NnResultsFormatter` and `NnStatelessResultsFormatter`.
-
-An `NnWorkflowCommand` whose `handleResults(_:)` is provided: it asks a formatter for the message and writes it. Use it when `handleResults(_:)` would only format the results and write them.
+An `AsyncParsableCommand` whose `run()` builds and runs a workflow, then asks a formatter for the message and writes it. This is the protocol almost every workflow command conforms to.
 
 ```swift
 public protocol NnResultsFormatter {
@@ -559,23 +500,28 @@ public protocol NnStatelessResultsFormatter: NnResultsFormatter {
     init()
 }
 
-public protocol NnFormattedWorkflowCommand: NnWorkflowCommand {
+public protocol NnWorkflowCommand: NnCustomResultsWorkflowCommand {
     associatedtype ResultsFormatter: NnResultsFormatter
     where ResultsFormatter.Results == Workflow.PerformerType.Results
 
     var resultsFormatter: ResultsFormatter { get }
 }
 
-public extension NnFormattedWorkflowCommand {
+public extension NnWorkflowCommand {
     func handleResults(_ results: Workflow.PerformerType.Results) throws
 }
 
-public extension NnFormattedWorkflowCommand where ResultsFormatter: NnStatelessResultsFormatter {
+public extension NnWorkflowCommand where ResultsFormatter: NnStatelessResultsFormatter {
     var resultsFormatter: ResultsFormatter { get }
 }
 ```
 
-The provided `handleResults(_:)` asks `resultsFormatter` for the message and writes it with `NnOutput.write`. When the message is `nil`, it writes nothing.
+| Member | Role |
+|--------|------|
+| `makeWorkflow()` | The command's **composition root**. Pull infrastructure from the root command's `contextFactory`, build the stages, and inject parsed options into the inspection interpreter. |
+| `resultsFormatter` | Presentation. Turns `Results` into the message the command writes, or `nil` to write nothing. |
+
+`run()` comes from `NnCustomResultsWorkflowCommand`, which this protocol refines; see that section for how it runs the workflow. The provided `handleResults(_:)` asks `resultsFormatter` for the message and writes it with `NnOutput.write`. When the message is `nil`, it writes nothing.
 
 A command says which formatter it uses in one of two ways:
 
@@ -588,7 +534,7 @@ A struct with no stored properties already has `init()`, so a stateless formatte
 
 When you write `resultsFormatter` yourself, declare it as a computed property. A stored one makes the command fail to compile with an error that it doesn't conform to `Decodable`, because ArgumentParser decodes every stored property of a command.
 
-A command that needs more than one write, or anything besides writing, keeps its own `handleResults(_:)`.
+A command that needs more than one write, or anything besides writing, conforms to `NnCustomResultsWorkflowCommand` instead.
 
 ### Usage Example
 
@@ -605,7 +551,7 @@ struct PublishMessageFormatter: NnStatelessResultsFormatter {
 }
 
 extension MyTool {
-    struct Publish: NnFormattedWorkflowCommand {
+    struct Publish: NnWorkflowCommand {
         typealias ResultsFormatter = PublishMessageFormatter
 
         static let configuration = CommandConfiguration(abstract: "Tags and publishes a release.")
@@ -614,7 +560,7 @@ extension MyTool {
         var version: String?
 
         func makeWorkflow() throws -> PublishWorkflow {
-            let context = MyTool.makeContext()
+            let context = MyTool.makeContext()   // infrastructure from contextFactory
 
             return .init(
                 inspector: .init(shell: context.shell, fileSystem: context.fileSystem),
@@ -627,6 +573,71 @@ extension MyTool {
     }
 }
 ```
+
+---
+
+## Protocol: NnCustomResultsWorkflowCommand
+
+Requires NnArgumentParser 3.0.0 or later. In 2.x this protocol is named `NnWorkflowCommand`.
+
+An `AsyncParsableCommand` whose `run()` builds and runs a workflow, then hands the results to the command's own `handleResults(_:)`. Use it only when the command needs more than one write, or anything besides writing; otherwise conform to `NnWorkflowCommand`.
+
+```swift
+public protocol NnCustomResultsWorkflowCommand: AsyncParsableCommand {
+    associatedtype Workflow: NnWorkflow
+
+    func makeWorkflow() throws -> Workflow
+    func handleResults(_ results: Workflow.PerformerType.Results) throws
+}
+
+public extension NnCustomResultsWorkflowCommand {
+    mutating func run() async throws
+}
+```
+
+| Member | Role |
+|--------|------|
+| `makeWorkflow()` | The command's composition root, as for `NnWorkflowCommand`. |
+| `handleResults(_:)` | Presentation. Write the results with `NnOutput.write` so `testRun` can capture them. This is the only stage that writes the final report to stdout. |
+
+Don't implement `run()` yourself. The extension builds the workflow, awaits it with a blocking-tolerant executor preference, then calls synchronous `handleResults(_:)`. This lets workflow task-group children make blocking calls without occupying the cooperative pool's threads. Calling `workflow.run()` directly does not install this preference. `NnWorkflowCommand` inherits this `run()`.
+
+### Usage Example
+
+```swift
+extension MyTool {
+    struct Release: NnCustomResultsWorkflowCommand {
+        static let configuration = CommandConfiguration(abstract: "Publishes a release and lists its assets.")
+
+        func makeWorkflow() throws -> ReleaseWorkflow {
+            let context = MyTool.makeContext()
+
+            return .init(
+                inspector: .init(shell: context.shell),
+                inspectionInterpreter: .init(),
+                collector: .init(),
+                collectionInterpreter: .init(),
+                performer: .init(shell: context.shell)
+            )
+        }
+
+        func handleResults(_ results: ReleasePerformer.Results) throws {
+            NnOutput.write("Released \(results.version).")
+
+            for asset in results.assets {
+                NnOutput.write("  \(asset)")
+            }
+        }
+    }
+}
+```
+
+---
+
+## Migrating from 2.x
+
+- Rename `NnFormattedWorkflowCommand` to `NnWorkflowCommand`. The old name no longer exists.
+- A command on the 2.x `NnWorkflowCommand` that writes its own `handleResults(_:)` no longer compiles, because `NnWorkflowCommand` now requires a `resultsFormatter`. Either move the message into an `NnResultsFormatter` and delete `handleResults(_:)`, or conform the command to `NnCustomResultsWorkflowCommand` when it needs more than one write or anything besides writing.
 
 ---
 

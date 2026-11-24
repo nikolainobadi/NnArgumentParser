@@ -362,7 +362,7 @@ public enum NnRunOutcome: Sendable, Equatable {
 }
 ```
 
-Register an observer inside the command scope to learn how the run ended — to finish a log, record telemetry, or point the user at a log file. Registration outside a scope traps. A command can't catch its own error (`NnWorkflowCommand.run()` is provided), so this is the way to see it.
+Register an observer inside the command scope to learn how the run ended — to finish a log, record telemetry, or point the user at a log file. Registration outside a scope traps. A command can't catch its own error (a workflow command's `run()` is provided), so this is the way to see it.
 
 - **When:** once, after the command returns or throws, and before the root's `main()` reports a failure.
 - **Order:** registration order. Observers report what happened; they aren't teardown.
@@ -405,7 +405,7 @@ struct DefaultFactory: ContextFactory {
 
 ## Best Practices
 
-- **Conform only the root command to `NnRootCommand`.** Subcommands use `ParsableCommand`, `AsyncParsableCommand`, or `NnWorkflowCommand` and reach dependencies via the root type's static accessors.
+- **Conform only the root command to `NnRootCommand`.** Subcommands use `ParsableCommand`, `AsyncParsableCommand`, `NnWorkflowCommand`, or `NnCustomResultsWorkflowCommand` and reach dependencies via the root type's static accessors.
 - **Keep `Factory` an infrastructure seam, not a service locator.** Vend primitives (shell, file system, picker); let each command assemble its feature locally.
 - **Never import ArgumentParser directly** — it arrives via `NnArgumentParser`.
 - **Inject factories through testing helpers** — production relies on `defaultFactory`; the `contextFactory` setter is not public.

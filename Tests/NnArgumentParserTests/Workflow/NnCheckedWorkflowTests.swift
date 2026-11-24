@@ -399,7 +399,7 @@ private final class CheckedCommandFactory: Sendable {
     }
 }
 
-private struct CheckedCommand: NnRootCommand, NnWorkflowCommand {
+private struct CheckedCommand: NnRootCommand, NnCustomResultsWorkflowCommand {
     static var defaultFactory: CheckedCommandFactory {
         return .init(log: .init(), outcome: .confirms)
     }

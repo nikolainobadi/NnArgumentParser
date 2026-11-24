@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Rename the formatter-based workflow command protocol from `NnFormattedWorkflowCommand` to
+  `NnWorkflowCommand`, and the protocol whose conformers write their own `handleResults(_:)` from
+  `NnWorkflowCommand` to `NnCustomResultsWorkflowCommand`. The name `NnFormattedWorkflowCommand` is
+  removed. `NnWorkflowCommand` refines `NnCustomResultsWorkflowCommand` and inherits its `run()`.
+  A command conforming to the old `NnWorkflowCommand` with its own `handleResults(_:)` no longer
+  compiles: move its message into an `NnResultsFormatter`, or conform it to
+  `NnCustomResultsWorkflowCommand` when it writes more than once or does anything besides writing
+  (breaking).
+
 ## [2.1.0] - 2026-11-22
 
 ### Added

@@ -1,5 +1,5 @@
 import Testing
-@testable import NnArgumentParser
+import NnArgumentParserTesting
 
 struct CaseInsensitiveArgumentTests {
     @Test
