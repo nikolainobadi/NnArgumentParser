@@ -46,7 +46,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 Add the package to your `Package.swift`:
 
 ```swift
-.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "2.1.0")
+.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "3.0.0")
 ```
 
 Then add the product to your target:

@@ -98,3 +98,5 @@ changelog, so a release cut without the rename silently ships an empty entry.
   Each returns the matching case's payload, or `nil` for the other case. For requirement assertions,
   unwrap the expected payload with `#require`, then assert on its value or fields.
 - Tests use Swift Testing (`import Testing`), with backtick-quoted descriptive test names.
+  `NnInterruptRealSignalTests` sends signals only in exit-test child processes and is skipped
+  while a debugger is attached, because the debugger stops on SIGINT instead of delivering it.

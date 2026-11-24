@@ -175,7 +175,7 @@ To stop a run at a given stage, pass `throwError: true` and assert with `await #
 
 ### Results formatters
 
-Requires NnArgumentParser 2.1.0 or later.
+Results formatter protocols require NnArgumentParser 2.1.0 or later. The formatter-based `NnWorkflowCommand` requires 3.0.0 or later; in 2.1.0 it is named `NnFormattedWorkflowCommand`.
 
 An `NnResultsFormatter` is a pure function of the results and whatever the command passed to its initializer, so test it directly, like an interpreter: build the formatter, call `message(for:)`, and assert on the string or on `nil`. To test that an `NnWorkflowCommand` writes the message, run the command through `testRun` and assert on the captured output.
 

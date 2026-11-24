@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "3.0.0",
   "name": "NnArgumentParser",
   "description": "NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser — the NnRootCommand protocol with a contextFactory dependency-injection seam, the NnWorkflow inspect/collect/perform command pipeline, and the testRun helper and workflow stage mocks for driving commands end-to-end in tests.",
   "author": { "name": "Nikolai Nobadi" }
