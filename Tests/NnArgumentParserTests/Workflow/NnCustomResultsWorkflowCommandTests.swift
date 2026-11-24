@@ -18,6 +18,13 @@ struct NnCustomResultsWorkflowCommandTests {
 
         #expect(output == "all \(childCount) children ran concurrently")
     }
+
+    @Test
+    func `The command runs a workflow's own run rather than the default`() async throws {
+        let output = try await CustomRunCommand.testRun(contextFactory: 1, args: [], interactionMode: .nonInteractive(assumeYes: false))
+
+        #expect(output == "custom run")
+    }
 }
 
 
@@ -46,6 +53,42 @@ private struct BarrierWorkflow: NnWorkflow {
     let collector: NnPassthroughCollector
     let collectionInterpreter: NnPassthroughCollectionInterpreter<Int>
     let performer: BarrierPerformer
+}
+
+private struct CustomRunCommand: NnRootCommand, NnCustomResultsWorkflowCommand {
+    static var defaultFactory: Int { 1 }
+
+    func makeWorkflow() throws -> CustomRunWorkflow {
+        return .init(
+            inspector: .init(childCount: Self.contextFactory),
+            inspectionInterpreter: .init(),
+            collector: .init(),
+            collectionInterpreter: .init(),
+            performer: .init()
+        )
+    }
+
+    func handleResults(_ results: String) throws {
+        NnOutput.write(results)
+    }
+}
+
+private struct CustomRunWorkflow: NnWorkflow {
+    let inspector: ChildCountInspector
+    let inspectionInterpreter: ChildCountInterpreter
+    let collector: NnPassthroughCollector
+    let collectionInterpreter: NnPassthroughCollectionInterpreter<Int>
+    let performer: DefaultRunPerformer
+
+    func run() async throws -> String {
+        return "custom run"
+    }
+}
+
+private struct DefaultRunPerformer: NnPerformer {
+    func perform(brief: Int) async throws -> String {
+        return "default run"
+    }
 }
 
 private struct ChildCountInspector: NnInspector {

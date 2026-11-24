@@ -4,7 +4,7 @@ API for structuring a command's `run()` as a typed pipeline: **inspect → inter
 
 **Import:** `import NnArgumentParser`
 
-The five-stage workflow interfaces require NnArgumentParser 2.0.0 or later. Shared checks, results formatters, and `run()` as a protocol requirement require 2.1.0 or later.
+The five-stage workflow interfaces require NnArgumentParser 2.0.0 or later. Results formatters and `run()` as a protocol requirement require 2.1.0 or later.
 
 ---
 
@@ -21,8 +21,6 @@ Each stage has one job. The protocols enforce the data flow between stages; thes
 | **Perform** | `NnPerformer` | Does the work. Usually the largest stage, so it's split into use cases. Returns **results**. | Only for *additional* information that comes up during the work, never for what Collect exists to gather |
 
 Decisions belong in the two interpreters. Keep them out of the inspector and the collector. If the inspector chooses between options or the collector decides whether to ask, the pipeline's separation is lost.
-
-The four stages of a shared check follow the same rules. See [Shared checks](#shared-checks).
 
 ---
 
@@ -66,7 +64,7 @@ public extension NnWorkflow {
 
 Requires NnArgumentParser 2.1.0 or later for protocol dispatch to a custom `run()` implementation.
 
-`run()` is a protocol requirement with a default, so a conforming struct doesn't write it. Because it is a requirement, a wrapper such as `NnCheckedWorkflow` can supply its own, and `NnWorkflowCommand` calls that one. The default is:
+`run()` is a protocol requirement with a default, so a conforming struct doesn't write it. Because it is a requirement, a workflow that wraps another can supply its own `run()`, and `NnWorkflowCommand` calls that one. Calling such a wrapper's stages one by one skips whatever its `run()` adds. The default is:
 
 ```swift
 let facts = try await inspector.inspect()
@@ -349,140 +347,6 @@ inspector: .init(base: .init(gitClient: gitClient), track: { work in
 
 ---
 
-## Shared checks
-
-Requires NnArgumentParser 2.1.0 or later.
-
-Checks that several commands run before their own work: a tool is installed, the working tree is clean, the user confirms an unusual state. A check is a workflow without a performer. It has its own inspector and its own facts, so the same check fits in front of any command, whatever that command's stage types are.
-
-```swift
-public protocol NnRunnableCheck {
-    func run() async throws
-}
-
-public protocol NnCheck: NnRunnableCheck {
-    associatedtype InspectorType: NnInspector
-
-    associatedtype InspectionInterpreter: NnInspectionInterpreter
-    where InspectionInterpreter.Facts == InspectorType.Facts
-
-    associatedtype CollectorType: NnCollector
-    where CollectorType.Requirements == InspectionInterpreter.Requirements
-
-    associatedtype CollectionInterpreter: NnCollectionInterpreter
-    where CollectionInterpreter.Findings == InspectionInterpreter.Findings,
-          CollectionInterpreter.Requirements == CollectorType.Requirements,
-          CollectionInterpreter.Answers == CollectorType.Answers
-
-    var inspector: InspectorType { get }
-    var inspectionInterpreter: InspectionInterpreter { get }
-    var collector: CollectorType { get }
-    var collectionInterpreter: CollectionInterpreter { get }
-}
-
-public extension NnCheck {
-    func run() async throws
-}
-
-public struct NnCheckGroup<each Check: NnRunnableCheck>: NnRunnableCheck {
-    public init(_ checks: repeat each Check)
-    public func run() async throws
-}
-
-public struct NnCheckedWorkflow<Checks: NnRunnableCheck, Base: NnWorkflow>: NnWorkflow {
-    public init(checks: Checks, base: Base)
-    public func run() async throws -> Base.PerformerType.Results
-}
-```
-
-| Type | Role |
-|------|------|
-| `NnCheck` | What you write: a struct of four `let`s, one per stage. The provided `run()` calls the four stages in order and discards the brief. |
-| `NnRunnableCheck` | Anything that can run before a workflow and stop it by throwing. `NnCheck` refines it, and `NnCheckGroup` conforms to it. You rarely conform to it directly. |
-| `NnCheckGroup` | Runs its checks in declaration order. A group is itself a runnable check, so a named shared group nests inside another group. |
-| `NnCheckedWorkflow` | Wraps a workflow. Its `run()` runs the checks, then the base workflow. Its five stages are the base's stages, and its results type is the base's results type. |
-
-A check's stages follow the [stage semantics](#stage-semantics) unchanged. The inspector gathers the check's own facts, the inspection interpreter throws when the command can't run, the collector asks only for unknown requirements, and the collection interpreter validates the answer and throws to stop the run. A check with nothing to ask uses `NnPassthroughCollector` and `NnPassthroughCollectionInterpreter`.
-
-### Order of work
-
-1. The first check runs its four stages: inspect, interpret, collect, interpret.
-2. Each later check does the same, in declaration order.
-3. The base workflow runs its five stages.
-
-The first throw stops the run. A failed or declined check stops every later check and the whole base workflow before they inspect or ask anything.
-
-### Usage Example
-
-```swift
-struct CleanTreeCheck: NnCheck {
-    let inspector: CleanTreeInspector                         // Facts == TreeStatus
-    let inspectionInterpreter: CleanTreeInspectionInterpreter // Requirements == NnRequirement<Bool, [String]>
-    let collector: CleanTreeCollector                         // asks whether to continue with uncommitted changes
-    let collectionInterpreter: CleanTreeCollectionInterpreter // throws when the answer is no
-}
-
-struct CleanTreeCollectionInterpreter: NnCollectionInterpreter {
-    func interpret(findings: TreeStatus, requirements: NnRequirement<Bool, [String]>, answers: Bool?) throws -> TreeStatus {
-        guard try requirements.resolve(answer: answers) else {
-            throw CleanTreeError.declined
-        }
-
-        return findings
-    }
-}
-```
-
-A command adopts checks by wrapping its workflow in `makeWorkflow()`. The workflow type and results formatter don't change:
-
-```swift
-struct Publish: NnWorkflowCommand {
-    typealias ResultsFormatter = PublishMessageFormatter
-
-    @Argument(help: "The version to publish. Prompts when omitted.")
-    var version: String?
-
-    func makeWorkflow() throws -> NnCheckedWorkflow<NnCheckGroup<CleanTreeCheck, OffMainBranchCheck>, PublishWorkflow> {
-        let context = MyTool.makeContext()
-
-        return .init(
-            checks: .init(
-                CleanTreeCheck(inspector: .init(shell: context.shell), inspectionInterpreter: .init(), collector: .init(picker: context.picker), collectionInterpreter: .init()),
-                OffMainBranchCheck(inspector: .init(shell: context.shell), inspectionInterpreter: .init(), collector: .init(), collectionInterpreter: .init())
-            ),
-            base: .init(
-                inspector: .init(shell: context.shell, fileSystem: context.fileSystem),
-                inspectionInterpreter: .init(requestedVersion: version),
-                collector: .init(picker: context.picker),
-                collectionInterpreter: .init(),
-                performer: .init(shell: context.shell, picker: context.picker)
-            )
-        )
-    }
-}
-```
-
-A single check needs no group: `NnCheckedWorkflow(checks: cleanTreeCheck, base: ...)`. To share a set between commands, name the group and nest it:
-
-```swift
-typealias RepositoryChecks = NnCheckGroup<CleanTreeCheck, OffMainBranchCheck>
-
-let repositoryChecks = RepositoryChecks(cleanTreeCheck, offMainBranchCheck)
-NnCheckGroup(repositoryChecks, signingKeyCheck)   // clean tree, off main, then signing key
-```
-
-### Behavioral Notes
-
-- **Each check finishes before the next thing starts.** A check may therefore prompt before the command's own inspection finds a blocker, and the user can answer a confirmation and then see the command stop anyway.
-- **Decide in the interpreters.** Any stage's throw stops the run, but only an interpreter should decide to stop it: the inspection interpreter when the command can't run, the collection interpreter when the answer is no. The collector never decides.
-- **A check's output is discarded.** Its findings, answers, and brief never reach the command, and a check can't see the command's facts. If both need the same fact, both inspect it. If the command needs a value from the user, the command's own collector asks for it.
-- **Only `run()` runs the checks.** `NnWorkflowCommand` calls it. Calling the checked workflow's five stages one by one runs the base workflow and skips every check.
-- **A check included through two groups runs twice.** Groups don't deduplicate.
-- **Track each inspection separately.** Name `NnTrackedInspector<...>` as a check's inspector type to track that check, and as the base workflow's inspector type to track the command's own inspection.
-- **Checks get no special interactivity handling.** `NnRequirement.ask(_:)` never reads the interaction mode. A check's collector behaves under `--non-interactive` and `--yes` exactly as the prompting dependency you hand it does, the same as any other collector.
-
----
-
 ## Protocol: NnWorkflowCommand
 
 Requires NnArgumentParser 3.0.0 or later. In 2.1.0 this protocol is named `NnFormattedWorkflowCommand`.
@@ -638,6 +502,7 @@ extension MyTool {
 
 - Rename `NnFormattedWorkflowCommand` to `NnWorkflowCommand`. The old name no longer exists.
 - A command on the 2.x `NnWorkflowCommand` that writes its own `handleResults(_:)` no longer compiles, because `NnWorkflowCommand` now requires a `resultsFormatter`. Either move the message into an `NnResultsFormatter` and delete `handleResults(_:)`, or conform the command to `NnCustomResultsWorkflowCommand` when it needs more than one write or anything besides writing.
+- `NnCheck`, `NnRunnableCheck`, `NnCheckGroup`, and `NnCheckedWorkflow` are removed. Move a shared precondition into each command's inspection, or, when the precondition prompts, keep a wrapper workflow local to the tool that supplies its own `run()`.
 
 ---
 
