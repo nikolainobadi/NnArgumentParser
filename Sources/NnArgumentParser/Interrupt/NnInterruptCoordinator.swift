@@ -4,7 +4,8 @@ import Foundation
 /// the process ending by the signal.
 ///
 /// The signal handler only records the signal (``NnInterruptSignal``). The cleanup work runs on a
-/// dispatch source, which kqueue fires for every delivered signal whatever its disposition. A
+/// dispatch source, which kqueue fires for every signal sent whatever its disposition, and which
+/// records the signal too before running cleanups, since it can fire before the handler runs. A
 /// second signal is handled by the signal handler itself, because this queue is busy with cleanups.
 final class NnInterruptCoordinator: Sendable {
     private let box: NnStateBox
@@ -65,6 +66,8 @@ extension NnInterruptCoordinator {
 
             let source = DispatchSource.makeSignalSource(signal: signo, queue: queue)
             source.setEventHandler {
+                // kqueue can fire before the signal handler runs; record first so cleanups see the interrupt.
+                NnInterruptSignal.record(signo)
                 self.handle(signal: signo)
             }
             source.resume()

@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NnCustomResultsWorkflowCommand` when it writes more than once or does anything besides writing
   (breaking).
 
+### Fixed
+
+- Record an interrupt before running interrupt cleanups. The cleanup queue could fire before the
+  signal handler had recorded the signal, so a cleanup, or an error it caused, could see no
+  interrupt in progress.
+
 ## [2.1.0] - 2026-11-22
 
 ### Added
