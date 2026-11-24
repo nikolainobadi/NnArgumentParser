@@ -1,15 +1,23 @@
 import Foundation
 import Synchronization
 
-/// The process-wide record of an interrupt, written by the signal handler itself.
+/// The process-wide record of an interrupt, written by the signal handler and the coordinator's queue.
 ///
-/// The handler runs the moment a signal is delivered, so the flag is set before any error the
-/// interrupt causes — a killed child, a cancelled picker — can reach `main()`. Everything slower
-/// happens later, on the coordinator's queue.
+/// Whichever of the two sees the signal first records it, so the flag is set before any cleanup runs
+/// and before any error the interrupt causes — a killed child, a cancelled picker — can reach
+/// `main()`. The queue can see a signal before the handler does: kqueue notes a signal when it is
+/// sent, and the handler runs only once the signal is delivered to a thread.
 enum NnInterruptSignal {
     /// The first signal received, or `0` when no interrupt has started.
     static var received: Int32 {
         return receivedSignal.load(ordering: .sequentiallyConsistent)
+    }
+
+    /// Records `signo` as the interrupt, unless one is already recorded.
+    ///
+    /// Async-signal-safe: a single atomic compare-exchange.
+    static func record(_ signo: Int32) {
+        _ = receivedSignal.compareExchange(expected: 0, desired: signo, ordering: .sequentiallyConsistent)
     }
 
     /// Installs the handler for `signo` and returns the action it replaced.
@@ -48,14 +56,19 @@ enum NnInterruptSignal {
 private extension NnInterruptSignal {
     static let receivedSignal = Atomic<Int32>(0)
 
-    /// Only async-signal-safe work: an atomic exchange, and on a repeat signal, `sigaction` and `raise`.
+    /// How many signals the handler has taken. Only the handler counts, so a signal the queue
+    /// recorded first is still the handler's first delivery, not a repeat.
+    static let deliveries = Atomic<Int32>(0)
+
+    /// Only async-signal-safe work: atomic operations, and on a repeat signal, `sigaction` and `raise`.
     ///
     /// A repeated signal stays blocked until the handler returns, then kills the process by the
     /// default action.
     static let signalHandler: @convention(c) (Int32) -> Void = { signo in
-        let (isFirst, _) = receivedSignal.compareExchange(expected: 0, desired: signo, ordering: .sequentiallyConsistent)
+        record(signo)
+        let (_, deliveryCount) = deliveries.wrappingAdd(1, ordering: .sequentiallyConsistent)
 
-        if !isFirst {
+        if deliveryCount > 1 {
             resetToDefault(signo)
             raise(signo)
         }

@@ -32,7 +32,7 @@ answer. See [Non-Interactive Callers](#supporting-non-interactive-callers).
 - **Non-interactive mode** — `InteractivityOptions` flags plus automatic detection of pipes, redirects, and CI
 - **Case-insensitive enums** — `CaseInsensitiveArgument` accepts any letter casing for enum arguments
 - **Key-value options** — `KeyValueArgument` parses repeatable `<key>=<value>` options
-- **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and a performer for execution; `NnWorkflowCommand` provides async command execution, and `NnFormattedWorkflowCommand` writes the results through a formatter so the command needs no `handleResults(_:)`
+- **Composable command workflows** — `NnWorkflow` runs typed stages in order, with async inspection and a performer for execution; `NnWorkflowCommand` runs the workflow and writes its results through a formatter, and `NnCustomResultsWorkflowCommand` is for commands that handle their results themselves
 - **Inspection progress** — `NnTrackedInspector` wraps an inspector with a caller-provided async closure for reporting progress
 - **Shared checks** — `NnCheckedWorkflow` runs reusable `NnCheck`s to completion before a command's workflow, and `NnCheckGroup` shares sets of them between commands
 - **ArgumentParser re-export** — one import gets you both

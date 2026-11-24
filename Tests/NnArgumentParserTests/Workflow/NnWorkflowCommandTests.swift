@@ -1,107 +1,118 @@
 import Testing
-import Foundation
-import NnArgumentParser
 import NnArgumentParserTesting
 
 struct NnWorkflowCommandTests {
     @Test
-    func `A workflow command hands the performer's results to the command`() async throws {
-        let output = try await BarrierCommand.testRun(contextFactory: 1, args: [], interactionMode: .nonInteractive(assumeYes: false))
+    func `A workflow command writes its formatter's message`() async throws {
+        let output = try await FormattedCommand.testRun(contextFactory: "released", args: [], interactionMode: .nonInteractive(assumeYes: false))
 
-        #expect(output == "all 1 children ran concurrently")
+        #expect(output == "Message: released")
     }
 
     @Test
-    func `Blocking task group children all run at once rather than in core-count batches`() async throws {
-        let childCount = ProcessInfo.processInfo.activeProcessorCount * 2
+    func `A workflow command writes nothing when its formatter returns nil`() async throws {
+        let output = try await FormattedCommand.testRun(contextFactory: "", args: [], interactionMode: .nonInteractive(assumeYes: false))
 
-        let output = try await BarrierCommand.testRun(contextFactory: childCount, args: [], interactionMode: .nonInteractive(assumeYes: false))
+        #expect(output.isEmpty)
+    }
 
-        #expect(output == "all \(childCount) children ran concurrently")
+    @Test
+    func `A parsed option reaches the formatter the command vends`() async throws {
+        let output = try await FormattedCommand.testRun(contextFactory: "released", args: ["--uppercase"], interactionMode: .nonInteractive(assumeYes: false))
+
+        #expect(output == "MESSAGE: RELEASED")
+    }
+
+    @Test
+    func `A command that only names a stateless formatter writes its message`() async throws {
+        let output = try await StatelessFormattedCommand.testRun(contextFactory: "released", args: [], interactionMode: .nonInteractive(assumeYes: false))
+
+        #expect(output == "Plain: released")
     }
 }
 
 
 // MARK: - Test Doubles
-private struct BarrierCommand: NnRootCommand, NnWorkflowCommand {
-    static var defaultFactory: Int { 1 }
+private struct FormattedCommand: NnRootCommand, NnWorkflowCommand {
+    static var defaultFactory: String { "" }
 
-    func makeWorkflow() throws -> BarrierWorkflow {
+    @Flag var uppercase = false
+
+    var resultsFormatter: MessageFormatter {
+        return .init(uppercase: uppercase)
+    }
+
+    func makeWorkflow() throws -> MessageWorkflow {
         return .init(
-            inspector: .init(childCount: Self.contextFactory),
+            inspector: .init(value: Self.contextFactory),
             inspectionInterpreter: .init(),
             collector: .init(),
             collectionInterpreter: .init(),
             performer: .init()
         )
     }
+}
 
-    func handleResults(_ results: String) throws {
-        NnOutput.write(results)
+private struct MessageFormatter: NnResultsFormatter {
+    let uppercase: Bool
+
+    func message(for results: String) -> String? {
+        guard !results.isEmpty else {
+            return nil
+        }
+
+        let message = "Message: \(results)"
+
+        return uppercase ? message.uppercased() : message
     }
 }
 
-private struct BarrierWorkflow: NnWorkflow {
-    let inspector: ChildCountInspector
-    let inspectionInterpreter: ChildCountInterpreter
+private struct StatelessFormattedCommand: NnRootCommand, NnWorkflowCommand {
+    typealias ResultsFormatter = PlainFormatter
+
+    static var defaultFactory: String { "" }
+
+    func makeWorkflow() throws -> MessageWorkflow {
+        return .init(
+            inspector: .init(value: Self.contextFactory),
+            inspectionInterpreter: .init(),
+            collector: .init(),
+            collectionInterpreter: .init(),
+            performer: .init()
+        )
+    }
+}
+
+private struct PlainFormatter: NnStatelessResultsFormatter {
+    func message(for results: String) -> String? {
+        return "Plain: \(results)"
+    }
+}
+
+private struct MessageWorkflow: NnWorkflow {
+    let inspector: ValueInspector
+    let inspectionInterpreter: ValueInterpreter
     let collector: NnPassthroughCollector
-    let collectionInterpreter: NnPassthroughCollectionInterpreter<Int>
-    let performer: BarrierPerformer
+    let collectionInterpreter: NnPassthroughCollectionInterpreter<String>
+    let performer: EchoPerformer
 }
 
-private struct ChildCountInspector: NnInspector {
-    let childCount: Int
+private struct ValueInspector: NnInspector {
+    let value: String
 
-    func inspect() -> Int {
-        return childCount
+    func inspect() -> String {
+        return value
     }
 }
 
-private struct ChildCountInterpreter: NnInspectionInterpreter {
-    func interpret(facts: Int) throws -> NnInspection<Int, Void> {
+private struct ValueInterpreter: NnInspectionInterpreter {
+    func interpret(facts: String) throws -> NnInspection<String, Void> {
         return .init(findings: facts, requirements: ())
     }
 }
 
-private struct BarrierPerformer: NnPerformer {
-    func perform(brief childCount: Int) async throws -> String {
-        let barrier = Barrier(count: childCount)
-        let arrivals = await withTaskGroup(of: Bool.self) { group in
-            for _ in 0..<childCount {
-                group.addTask { barrier.arriveAndWait(timeout: 5) }
-            }
-
-            return await group.reduce(into: [Bool]()) { $0.append($1) }
-        }
-
-        return arrivals.allSatisfy { $0 } ? "all \(childCount) children ran concurrently" : "children were serialized"
-    }
-}
-
-private final class Barrier: @unchecked Sendable {
-    private let condition = NSCondition()
-    private let count: Int
-    private var arrived = 0
-
-    init(count: Int) {
-        self.count = count
-    }
-
-    func arriveAndWait(timeout: TimeInterval) -> Bool {
-        condition.lock()
-        defer { condition.unlock() }
-
-        arrived += 1
-        condition.broadcast()
-
-        let deadline = Date(timeIntervalSinceNow: timeout)
-
-        while arrived < count {
-            if !condition.wait(until: deadline) {
-                return false
-            }
-        }
-
-        return true
+private struct EchoPerformer: NnPerformer {
+    func perform(brief: String) -> String {
+        return brief
     }
 }

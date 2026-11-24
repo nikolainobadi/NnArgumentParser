@@ -1,5 +1,4 @@
 import Testing
-@testable import NnArgumentParser
 import NnArgumentParserTesting
 
 struct InteractionModeTests {

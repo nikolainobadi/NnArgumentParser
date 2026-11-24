@@ -1,0 +1,19 @@
+import ArgumentParser
+
+public protocol NnCustomResultsWorkflowCommand: AsyncParsableCommand {
+    associatedtype Workflow: NnWorkflow
+
+    func makeWorkflow() throws -> Workflow
+    func handleResults(_ results: Workflow.PerformerType.Results) throws
+}
+
+public extension NnCustomResultsWorkflowCommand {
+    mutating func run() async throws {
+        let workflow = try makeWorkflow()
+        let results = try await withTaskExecutorPreference(NnBlockingTolerantExecutor.shared) {
+            try await workflow.run()
+        }
+
+        try handleResults(results)
+    }
+}

@@ -185,7 +185,7 @@ To test that a command runs its checks, drive the `NnCheckedWorkflow` through `r
 
 Requires NnArgumentParser 2.1.0 or later.
 
-An `NnResultsFormatter` is a pure function of the results and whatever the command passed to its initializer, so test it directly, like an interpreter: build the formatter, call `message(for:)`, and assert on the string or on `nil`. To test that an `NnFormattedWorkflowCommand` writes the message, run the command through `testRun` and assert on the captured output.
+An `NnResultsFormatter` is a pure function of the results and whatever the command passed to its initializer, so test it directly, like an interpreter: build the formatter, call `message(for:)`, and assert on the string or on `nil`. To test that an `NnWorkflowCommand` writes the message, run the command through `testRun` and assert on the captured output.
 
 ## Asserting on requirements
 
@@ -315,4 +315,4 @@ Have your factory's test double vend those mocks, then inject the factory via `t
 - **Use `withIsolatedState` for direct state tests** — registration requires a scope, and the scope discards state automatically. `InteractionMode.reset()` no longer exists.
 - **Test workflow interpreters directly.** They're pure, so give them inputs and assert on outputs, without mocks.
 - **Test a workflow's wiring with the stage mocks.** Use real interpreters between a `MockInspector` and a `MockPerformer`, then assert on `capturedBriefs`.
-- **Test an `NnWorkflowCommand` end-to-end with `testRun`**, like any other command. It runs `makeWorkflow()` against your injected factory.
+- **Test an `NnWorkflowCommand` or `NnCustomResultsWorkflowCommand` end-to-end with `testRun`**, like any other command. It runs `makeWorkflow()` against your injected factory.
