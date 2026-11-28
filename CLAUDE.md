@@ -20,7 +20,7 @@ chain. Change them together.
 ## The skill lives in this repo
 
 `Skills/nn-argument-parser` is the Claude skill documenting this package's API. It is published
-through the `nn-swift-skills` marketplace as a `git-subdir` source pointing at this directory.
+through the `nn-skills-marketplace` marketplace as a `git-subdir` source pointing at this directory.
 
 It lives here rather than in a marketplace repo for one reason: an API change and its
 documentation are then the **same diff**, reviewed together. When they lived in separate repos

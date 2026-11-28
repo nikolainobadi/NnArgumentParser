@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-27
+
+### Changed
+
+- Rename the Claude Code API reference plugin and skill from `NnArgumentParser` to
+  `nn-argument-parser`. The reference now lives at `Skills/nn-argument-parser`; use the README's
+  updated installation commands: `/plugin marketplace add nikolainobadi/nn-skills-marketplace`
+  and `/plugin install nn-argument-parser@nn-skills-marketplace`.
+
 ## [3.0.0] - 2026-11-24
 
 ### Changed
@@ -195,7 +204,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which parses and runs a whole command, captures its standard output, and defaults to
   non-interactive so a test that reaches a prompt fails instead of blocking.
 
-[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/3.0.0...HEAD
+[Unreleased]: https://github.com/nikolainobadi/NnArgumentParser/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/nikolainobadi/NnArgumentParser/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.1.0...3.0.0
 [2.1.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/nikolainobadi/NnArgumentParser/compare/1.3.0...2.0.0
