@@ -10,7 +10,7 @@ suppressing prompts in automated contexts, and composable command workflows.
   collect, interpret, and perform stages, while `NnWorkflowCommand` adapts a workflow to a command.
 - `Sources/NnArgumentParserTesting` — async `testRun` for driving whole commands in tests,
   `withIsolatedState` for scoped state access, and workflow stage mocks for exercising pipeline wiring.
-- `Skills/NnArgumentParser` — **the published API reference.** See below.
+- `Skills/nn-argument-parser` — **the published API reference.** See below.
 
 Interactivity guidance appears in four places — the `InteractivityOptions` doc comment, `Skills/`,
 `README.md`, and `CHANGELOG.md`. They drifted once already: all four said to declare the option
@@ -19,7 +19,7 @@ chain. Change them together.
 
 ## The skill lives in this repo
 
-`Skills/NnArgumentParser` is the Claude skill documenting this package's API. It is published
+`Skills/nn-argument-parser` is the Claude skill documenting this package's API. It is published
 through the `nn-swift-skills` marketplace as a `git-subdir` source pointing at this directory.
 
 It lives here rather than in a marketplace repo for one reason: an API change and its

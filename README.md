@@ -325,13 +325,13 @@ factory's test double vend those, then inject it through `testRun`.
 
 ## API Reference for Claude Code
 
-`Skills/NnArgumentParser` is a [Claude Code](https://claude.com/claude-code) skill documenting this
+`Skills/nn-argument-parser` is a [Claude Code](https://claude.com/claude-code) skill documenting this
 package's full API. It lives in this repo so the docs change in the same PR as the API they
 describe. To use it:
 
 ```
-/plugin marketplace add nikolainobadi/nn-swift-skills
-/plugin install NnArgumentParser@nn-swift-skills
+/plugin marketplace add nikolainobadi/nn-skills-marketplace
+/plugin install nn-argument-parser@nn-skills-marketplace
 ```
 
 Claude then loads the reference automatically when you're working with this package.

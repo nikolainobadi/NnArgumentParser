@@ -1,5 +1,5 @@
 ---
-name: NnArgumentParser
+name: nn-argument-parser
 description: NnArgumentParser Swift API reference for building testable command-line tools on top of Apple's ArgumentParser. USE WHEN importing NnArgumentParser, building a CLI root command, using the NnRootCommand protocol, ContextFactory dependency injection for commands, defaultFactory / contextFactory, the @main entry point of a Swift CLI, suppressing prompts with InteractionMode / InteractivityOptions / --non-interactive / --yes / NO_PROMPT, parsing enum options case-insensitively with CaseInsensitiveArgument, parsing <key>=<value> options with KeyValueArgument, structuring a command as an inspect/collect/perform pipeline with NnWorkflow / NnWorkflowCommand / NnCustomResultsWorkflowCommand / NnResultsFormatter / NnStatelessResultsFormatter / NnRequirement / NnInspector / NnCollector / NnPerformer, showing progress during inspection with NnTrackedInspector, testing workflows with MockInspector / MockCollector / MockPerformer, asserting on NnRequirement in tests with knownValue / unknownInfo, routing output with NnOutput / NnOutputWriter, registering interrupt cleanup with NnInterrupt, observing how a run ended with NnCompletion / NnRunOutcome, testing interrupt cleanups with testRunCapturingCleanups / NnTestRunResult, isolating test state with withIsolatedState, or testing commands end-to-end with testRun and an injected mock factory.
 user-invocable: true
 ---
@@ -11,7 +11,7 @@ A thin layer over Apple's [swift-argument-parser](https://github.com/apple/swift
 **Dependency:** `.package(url: "https://github.com/nikolainobadi/NnArgumentParser.git", from: "3.0.0")`
 **Platforms:** macOS 15+ | **Swift:** 6.4 | **Depends on:** swift-argument-parser 1.8.2+
 
-This skill lives in the package repo it documents (`Skills/NnArgumentParser`), so an API change and its
+This skill lives in the package repo it documents (`Skills/nn-argument-parser`), so an API change and its
 documentation land in the same PR.
 
 ## Context Files
